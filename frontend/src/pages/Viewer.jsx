@@ -16,15 +16,33 @@ export default function Viewer({ session }) {
   const [pages, setPages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [progress, setProgress] = useState(0);
+  const [visualProgress, setVisualProgress] = useState(0);
   const [showFeedback, setShowFeedback] = useState(false);
   const [scale, setScale] = useState(1);
   const [dimensions, setDimensions] = useState({ width: 500, height: 700 });
   const [currentPage, setCurrentPage] = useState(0);
+  const [bookState, setBookState] = useState('read');
   const bookRef = useRef();
 
   useEffect(() => {
     loadPDF();
   }, [fileId]);
+
+  // Fake smooth visual progress
+  useEffect(() => {
+    let interval;
+    if (loading) {
+      interval = setInterval(() => {
+        setVisualProgress(prev => {
+          const remaining = 99 - prev;
+          // Slows down as it approaches 99%
+          const increment = Math.max(0.5, Math.random() * (remaining / 8));
+          return Math.min(99, prev + increment);
+        });
+      }, 200);
+    }
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const loadPDF = async () => {
     try {
@@ -43,50 +61,42 @@ export default function Viewer({ session }) {
 
       const pdf = await loadingTask.promise;
       const numPages = pdf.numPages;
-      const pageImages = [];
-      let singlePageWidth = 0;
-      let singlePageHeight = 0;
 
-      // STEP 1: Rapidly scan PDF to build the book structure (Takes < 500ms)
+      // STEP 1: Rapidly build the book structure using established album rules
       const structure = [];
 
+      const page1 = await pdf.getPage(1);
+      const viewport1 = page1.getViewport({ scale: 1.5 });
+      const singlePageWidth = viewport1.width;
+      const singlePageHeight = viewport1.height;
+
+      setDimensions({
+        width: 500,
+        height: 500 * (singlePageHeight / singlePageWidth)
+      });
+
       for (let i = 1; i <= numPages; i++) {
-        const page = await pdf.getPage(i);
-        const viewport = page.getViewport({ scale: 1.5 });
-
-        if (i === 1) {
-          singlePageWidth = viewport.width;
-          singlePageHeight = viewport.height;
-          setDimensions({
-            width: 500,
-            height: 500 * (singlePageHeight / singlePageWidth)
-          });
-        }
-
-        const isSpread = viewport.width > singlePageWidth * 1.5;
-
         if (i === 1) {
           structure.push({ pdfPage: 1, type: 'single', imgSrc: null, isCover: true });
           structure.push({ pdfPage: 1, type: 'blank', imgSrc: createBlankPage(singlePageWidth, singlePageHeight) });
         } else if (i === numPages) {
           if (structure.length % 2 === 0) {
-            structure.push({ pdfPage: numPages, type: 'blank', imgSrc: createBlankPage(singlePageWidth, singlePageHeight) });
+            structure.push({ pdfPage: numPages, type: 'blank', imgSrc: createBlankPage(singlePageWidth, singlePageHeight), isLastBlank: true });
           }
           structure.push({ pdfPage: numPages, type: 'single', imgSrc: null, isCover: true });
-        } else if (isSpread) {
+        } else if (i === 2 || i === numPages - 1) {
+          // First and Last inside pages are singles
+          structure.push({ pdfPage: i, type: 'single', imgSrc: null });
+        } else {
+          // All middle pages are spreads
           structure.push({ pdfPage: i, type: 'spread-left', imgSrc: null });
           structure.push({ pdfPage: i, type: 'spread-right', imgSrc: null });
-        } else {
-          structure.push({ pdfPage: i, type: 'single', imgSrc: null });
         }
-        
-        setProgress(Math.round((i / numPages) * 10));
       }
 
-      setPages(structure);
-      setLoading(false); // UI shows up immediately!
+      setPages([...structure]);
 
-      // STEP 2: Background Render Loop
+      // STEP 2: Render first few pages BEFORE hiding loading screen (Cover + First Spread)
       const renderPageToImage = async (pdfPageNum, type) => {
         const page = await pdf.getPage(pdfPageNum);
         const viewport = page.getViewport({ scale: 1.5 });
@@ -104,13 +114,29 @@ export default function Viewer({ session }) {
         return canvas.toDataURL('image/jpeg', 0.8);
       };
 
-      for (let i = 0; i < structure.length; i++) {
+      const initialLoadCount = Math.min(5, structure.length);
+      for (let i = 0; i < initialLoadCount; i++) {
+        if (!structure[i].imgSrc) {
+          structure[i].imgSrc = await renderPageToImage(structure[i].pdfPage, structure[i].type);
+        }
+      }
+
+      setPages([...structure]);
+      setLoading(false); // UI shows up immediately with the first pages fully loaded!
+
+      // STEP 3: Background Render Loop for the rest of the album
+      // Give the browser 1.5 seconds to breathe and finish the opening animation before starting heavy background work
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      for (let i = initialLoadCount; i < structure.length; i++) {
         if (!structure[i].imgSrc) {
           const img = await renderPageToImage(structure[i].pdfPage, structure[i].type);
           structure[i].imgSrc = img;
           setPages([...structure]); // Trigger re-render with new image
+          
+          // Yield to the main thread for 300ms between each page so flip animations stay butter smooth
+          await new Promise(resolve => setTimeout(resolve, 300));
         }
-        setProgress(10 + Math.round((i / structure.length) * 90));
       }
 
     } catch (error) {
@@ -126,19 +152,36 @@ export default function Viewer({ session }) {
   };
 
   if (loading) {
+    const displayProgress = Math.round(visualProgress);
+    let loadingMessage = "Preparing your memories...";
+    if (displayProgress < 30) loadingMessage = "Downloading high-resolution album...";
+    else if (displayProgress < 60) loadingMessage = "Organizing pages...";
+    else if (displayProgress < 90) loadingMessage = "Binding your book...";
+    else loadingMessage = "Adding finishing touches...";
+
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        <h2 style={{ color: 'var(--color-gold)', marginBottom: '20px' }}>Loading Your Album...</h2>
+        <h2 style={{ color: 'var(--color-gold)', marginBottom: '10px' }}>Loading Your Album...</h2>
+        <p style={{ color: 'var(--color-grey-dark)', marginBottom: '20px', fontStyle: 'italic' }}>{loadingMessage}</p>
         <div style={{ width: '300px', height: '4px', backgroundColor: 'var(--color-grey-soft)', borderRadius: '2px', overflow: 'hidden' }}>
-          <div style={{ width: `${progress}%`, height: '100%', backgroundColor: 'var(--color-gold)', transition: 'width 0.3s' }}></div>
+          <div style={{ width: `${displayProgress}%`, height: '100%', backgroundColor: 'var(--color-gold)', transition: 'width 0.2s ease-out' }}></div>
         </div>
-        <p style={{ marginTop: '10px', color: 'var(--color-grey-dark)' }}>{progress}%</p>
+        <p style={{ marginTop: '10px', color: 'var(--color-grey-dark)', fontWeight: '500' }}>{displayProgress}%</p>
       </div>
     );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', backgroundColor: '#e5e5e5' }}>
+    <div className="viewer-container" style={{ 
+      display: 'flex', 
+      flexDirection: 'column', 
+      height: '100vh', 
+      backgroundColor: '#1a120b', 
+      backgroundImage: 'radial-gradient(circle at 15% 15%, rgba(255, 240, 210, 0.25) 0%, rgba(0, 0, 0, 0.5) 45%, rgba(0, 0, 0, 0.85) 100%), url("/wood-bg.jpg")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      overflow: 'hidden' 
+    }}>
       {/* Toolbar */}
       <div className="viewer-toolbar" style={{
         height: '60px',
@@ -154,7 +197,18 @@ export default function Viewer({ session }) {
           <ArrowLeft size={16} /> Back
         </button>
 
-        <h2 style={{ fontSize: '1.2rem' }}>{decodeURIComponent(fileId).replace('.pdf', '')}</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <h2 style={{ fontSize: '1.2rem' }}>{decodeURIComponent(fileId).replace('.pdf', '')}</h2>
+          {pages.length > 0 && (
+            <span style={{ fontSize: '0.8rem', color: 'var(--color-grey-dark)', marginTop: '4px', fontWeight: '500' }}>
+              {currentPage === 0 
+                ? 'Front Cover' 
+                : currentPage >= pages.length - 2 
+                  ? 'Back Cover' 
+                  : `Pages ${currentPage + 1}-${currentPage + 2} of ${pages.length}`}
+            </span>
+          )}
+        </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <button className="btn-outline" style={{ padding: '8px' }} onClick={() => setScale(s => Math.max(0.5, s - 0.2))}>
@@ -167,9 +221,10 @@ export default function Viewer({ session }) {
       </div>
 
       {/* Flipbook Container */}
-      <div className={`flipbook-container ${pages.length > 0 && currentPage >= pages.length - 2 ? 'at-end' : ''}`} style={{ transform: `scale(${scale})`, transition: 'transform 0.3s ease' }}>
-        {pages.length > 0 && (
-          <HTMLFlipBook
+      <div className={`flipbook-container ${pages.length > 0 && currentPage >= pages.length - 2 && bookState === 'read' ? 'at-end' : ''}`} style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', transform: `scale(${scale})`, transition: 'transform 0.3s ease', padding: '20px 20px 40px 20px' }}>
+        <div style={{ width: '100%', height: 'calc(100vh - 140px)', position: 'relative', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          {pages.length > 0 && (
+            <HTMLFlipBook
             width={dimensions.width}
             height={dimensions.height}
             size="stretch"
@@ -183,12 +238,13 @@ export default function Viewer({ session }) {
             className="album-flipbook"
             ref={bookRef}
             onFlip={(e) => setCurrentPage(e.data)}
+            onChangeState={(e) => setBookState(e.data)}
           >
             {pages.map((pageData, index) => (
               <div key={index} className="page">
                 <div className={`page-content ${index % 2 === 0 ? 'page-right' : 'page-left'} ${pageData.isCover ? 'cover-page' : ''}`}>
                   {pageData.imgSrc ? (
-                    <img src={pageData.imgSrc} alt={`Page ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                    <img src={pageData.imgSrc} alt={`Page ${index + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   ) : (
                     <div style={{ width: '100%', height: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f5f5f5' }}>
                       <div className="loading-spinner" style={{ color: '#ccc' }}>Loading...</div>
@@ -199,15 +255,14 @@ export default function Viewer({ session }) {
             ))}
           </HTMLFlipBook>
         )}
+        </div>
       </div>
 
       {/* Bottom Action Bar */}
       <div className="viewer-bottom-bar" style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '50%',
-        transform: 'translateX(-50%)',
         display: 'flex',
+        justifyContent: 'center',
+        padding: '0 20px 20px 20px',
         gap: '20px',
         zIndex: 10
       }}>
