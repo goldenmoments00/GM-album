@@ -218,7 +218,33 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           transition: isDragging ? 'none' : 'transform 0.3s ease'
         }}>
           {pages.length > 0 && (
-            <HTMLFlipBook
+            <>
+              {/* Thanku Text - Absolutely positioned on the right side of the spine */}
+              <div style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(0, -50%)',
+                width: `${dimensions.width}px`,
+                height: `${dimensions.height}px`,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                opacity: (currentPage >= pages.length - 2 && bookState === 'read') ? 1 : 0,
+                transition: 'opacity 1s ease',
+                pointerEvents: 'none',
+                zIndex: 1 // behind the page while turning
+              }}>
+                <span style={{
+                  fontFamily: "'Dancing Script', cursive",
+                  fontSize: '5rem',
+                  color: '#fff',
+                  textShadow: '0px 4px 15px rgba(0,0,0,0.4)',
+                  transform: 'rotate(-5deg)'
+                }}>Thanku</span>
+              </div>
+              
+              <HTMLFlipBook
               width={dimensions.width}
               height={dimensions.height}
               size="stretch"
@@ -249,6 +275,7 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
                 </div>
               ))}
             </HTMLFlipBook>
+            </>
           )}
         </div>
       </div>
