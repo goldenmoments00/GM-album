@@ -193,6 +193,52 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
         </div>
       </div>
 
+      {/* Painted Thank You Text directly on the wood background for proper blending */}
+      <div style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        pointerEvents: 'none',
+        opacity: (pages.length > 0 && currentPage >= pages.length - 2 && bookState === 'read') ? 0.9 : 0,
+        transition: 'opacity 1.5s ease 0.3s',
+        zIndex: 2 // underneath the flipbook container which is zIndex 5
+      }}>
+        {/* We recreate the scale/pan transform so it aligns with the book */}
+        <div style={{
+          width: '100%',
+          height: '100%',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          transform: `scale(${scale}) translate(${pan.x / scale}px, ${pan.y / scale}px)`,
+          transition: isDragging ? 'none' : 'transform 0.3s ease'
+        }}>
+          {/* Positioned exactly in the right half of the book area */}
+          <div style={{
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+            transform: 'translate(0, -50%)',
+            width: `${dimensions.width}px`,
+            height: `${dimensions.height}px`,
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingRight: '15%'
+          }}>
+            <span style={{
+              fontFamily: "'Breathing', cursive",
+              fontSize: isPortraitLayout ? '2.5rem' : '8rem',
+              color: '#ffffff',
+              mixBlendMode: 'overlay',
+              transform: 'rotate(-5deg)'
+            }}>Thank You</span>
+          </div>
+        </div>
+      </div>
+
       <div 
         className={`flipbook-container ${pages.length > 0 && currentPage >= pages.length - 2 && bookState === 'read' ? 'at-end' : ''}`} 
         style={{ 
@@ -218,33 +264,7 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           transition: isDragging ? 'none' : 'transform 0.3s ease'
         }}>
           {pages.length > 0 && (
-            <>
-              {/* Thanku Text - Absolutely positioned on the right side of the spine */}
-              <div style={{
-                position: 'absolute',
-                left: '50%',
-                top: '50%',
-                transform: 'translate(0, -50%)',
-                width: `${dimensions.width}px`,
-                height: `${dimensions.height}px`,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                opacity: (currentPage >= pages.length - 2 && bookState === 'read') ? 1 : 0,
-                transition: 'opacity 1s ease',
-                pointerEvents: 'none',
-                zIndex: 1 // behind the page while turning
-              }}>
-                <span style={{
-                  fontFamily: "'Dancing Script', cursive",
-                  fontSize: '5rem',
-                  color: '#fff',
-                  textShadow: '0px 4px 15px rgba(0,0,0,0.4)',
-                  transform: 'rotate(-5deg)'
-                }}>Thanku</span>
-              </div>
-              
-              <HTMLFlipBook
+            <HTMLFlipBook
               width={dimensions.width}
               height={dimensions.height}
               size="stretch"
@@ -275,7 +295,6 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
                 </div>
               ))}
             </HTMLFlipBook>
-            </>
           )}
         </div>
       </div>
