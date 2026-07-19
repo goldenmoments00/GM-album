@@ -20,7 +20,7 @@ export default function Login({ onLogin }) {
     setLoading(true);
     try {
       // Typically an env variable to backend URL, using relative here assuming proxy or same origin
-      const response = await fetch('http://localhost:3000/api/login', {
+      const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

@@ -14,7 +14,7 @@ export default function AlbumThumbnail({ folderId, fileName }) {
     
     const loadThumbnail = async () => {
       try {
-        const pdfUrl = `http://localhost:3000/api/pdf/${folderId}/${fileName}`;
+        const pdfUrl = `/api/pdf/${folderId}/${fileName}`;
         const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
         const pdf = await loadingTask.promise;
         const page = await pdf.getPage(1);
