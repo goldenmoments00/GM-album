@@ -20,6 +20,17 @@
   padding: 0;
 }
 
+html, body {
+  overflow: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--color-grey-soft);

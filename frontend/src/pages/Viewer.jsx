@@ -312,7 +312,13 @@ export default function Viewer({ session }) {
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          <button className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'white', padding: '8px 16px' }} onClick={() => setShowFeedback(true)}>
+            <MessageSquare size={18} /> Request Changes
+          </button>
+          <button className="btn-gold" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px' }} onClick={handleApprove}>
+            <Check size={18} /> Approve Album
+          </button>
           <button className="btn-outline" style={{ padding: '8px' }} onClick={toggleFullscreen} title="Toggle Fullscreen">
             <Maximize size={18} />
           </button>
@@ -384,28 +390,6 @@ export default function Viewer({ session }) {
             </HTMLFlipBook>
           )}
         </div>
-      </div>
-
-      {/* Bottom Action Bar */}
-      <div className="viewer-bottom-bar" style={{
-        position: 'absolute',
-        bottom: 0, left: 0, right: 0,
-        display: 'flex',
-        justifyContent: 'center',
-        padding: '15px 20px',
-        gap: '20px',
-        zIndex: 10,
-        transition: 'transform 0.3s ease, opacity 0.3s ease',
-        transform: immersiveMode ? 'translateY(100%)' : 'translateY(0)',
-        opacity: immersiveMode ? 0 : 1,
-        pointerEvents: immersiveMode ? 'none' : 'auto'
-      }}>
-        <button className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'white' }} onClick={() => setShowFeedback(true)}>
-          <MessageSquare size={18} /> Request Changes
-        </button>
-        <button className="btn-gold" style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={handleApprove}>
-          <Check size={18} /> Approve Album
-        </button>
       </div>
 
       {showFeedback && (
