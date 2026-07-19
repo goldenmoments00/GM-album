@@ -112,11 +112,11 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
     touchAction: 'none',
     zIndex: 0,
     ...(isPortraitLayout ? {
-      position: 'absolute',
+      position: 'fixed',
       top: '50%',
       left: '50%',
-      width: `${screenSize.h}px`,
-      height: `${screenSize.w}px`,
+      width: '100dvh',
+      height: '100dvw',
       transform: 'translate(-50%, -50%) rotate(90deg)',
       transformOrigin: 'center center',
       paddingLeft: 'env(safe-area-inset-top, 0px)',
@@ -124,8 +124,8 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
       paddingTop: 'env(safe-area-inset-left, 0px)',
       paddingBottom: 'env(safe-area-inset-right, 0px)'
     } : {
-      width: '100vw',
-      height: '100vh',
+      width: '100dvw',
+      height: '100dvh',
       paddingTop: 'env(safe-area-inset-top, 0px)',
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       paddingLeft: 'env(safe-area-inset-left, 0px)',
