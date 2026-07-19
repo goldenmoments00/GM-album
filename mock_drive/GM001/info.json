@@ -1,0 +1,14 @@
+{
+  "brideName": "Priya",
+  "groomName": "Rahul",
+  "albums": [
+    {
+      "title": "Bride Album",
+      "file": "Bride Album.pdf"
+    },
+    {
+      "title": "Groom Album",
+      "file": "Groom Album.pdf"
+    }
+  ]
+}

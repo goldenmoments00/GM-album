@@ -1,0 +1,154 @@
+const fs = require('fs');
+const path = require('path');
+const { google } = require('googleapis');
+
+// Helper to determine if we should use the mock drive for local testing
+const useMock = !process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const MOCK_DRIVE_PATH = path.join(__dirname, '../../mock_drive');
+
+let driveApi = null;
+
+if (!useMock) {
+  // Initialize Google Drive API
+  // It expects GOOGLE_APPLICATION_CREDENTIALS to point to the JSON key file
+  // OR expects standard ENV variables if hosted
+  const auth = new google.auth.GoogleAuth({
+    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+  });
+  
+  driveApi = google.drive({ version: 'v3', auth });
+}
+
+/**
+ * Searches for a folder in Google Drive by its name (Album Password)
+ * @param {string} folderName - The album password
+ * @returns {string|null} - The folder ID or null if not found
+ */
+async function findFolderByName(folderName) {
+  if (useMock) {
+    const folderPath = path.join(MOCK_DRIVE_PATH, folderName);
+    if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
+      return folderName; // In mock, folder ID is just the name
+    }
+    return null;
+  }
+
+  const rootFolderId = process.env.DRIVE_ROOT_FOLDER_ID;
+  const query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed = false`;
+  
+  try {
+    const res = await driveApi.files.list({
+      q: query,
+      fields: 'files(id, name)',
+      spaces: 'drive',
+    });
+
+    if (res.data.files.length > 0) {
+      return res.data.files[0].id;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error finding folder:', error);
+    throw new Error('Failed to search Google Drive');
+  }
+}
+
+/**
+ * Gets all PDF albums in the specified folder
+ * @param {string} folderId 
+ * @returns {Array} - List of album objects {title, file}
+ */
+async function getAlbumsInFolder(folderId) {
+  if (useMock) {
+    const folderPath = path.join(MOCK_DRIVE_PATH, folderId);
+    if (!fs.existsSync(folderPath)) {
+      throw new Error('Folder not found in mock drive');
+    }
+    const files = fs.readdirSync(folderPath);
+    const pdfs = files.filter(f => f.toLowerCase().endsWith('.pdf'));
+    
+    return pdfs.map(file => ({
+      title: file.replace(/\.pdf$/i, ''),
+      file: file
+    }));
+  }
+
+  try {
+    // Find all PDF files in the folder
+    const query = `'${folderId}' in parents and mimeType = 'application/pdf' and trashed = false`;
+    const res = await driveApi.files.list({
+      q: query,
+      fields: 'files(id, name)',
+    });
+
+    return res.data.files.map(file => ({
+      title: file.name.replace(/\.pdf$/i, ''),
+      file: file.name
+    }));
+  } catch (error) {
+    console.error('Error getting albums:', error);
+    throw new Error('Failed to read album files');
+  }
+}
+
+/**
+ * Streams a PDF file from Google Drive
+ * @param {string} folderId - The ID of the album folder
+ * @param {string} fileName - The name of the PDF file
+ * @param {object} res - Express response object to pipe the stream to
+ */
+async function streamPdf(folderId, fileName, res) {
+  if (useMock) {
+    const pdfPath = path.join(MOCK_DRIVE_PATH, folderId, fileName);
+    if (fs.existsSync(pdfPath)) {
+      res.setHeader('Content-Type', 'application/pdf');
+      const stream = fs.createReadStream(pdfPath);
+      stream.pipe(res);
+      return;
+    }
+    res.status(404).send('PDF not found in mock drive');
+    return;
+  }
+
+  try {
+    // Find the PDF file by name in the folder
+    const query = `name = '${fileName}' and '${folderId}' in parents and mimeType = 'application/pdf' and trashed = false`;
+    const searchRes = await driveApi.files.list({
+      q: query,
+      fields: 'files(id, name)',
+    });
+
+    if (searchRes.data.files.length === 0) {
+      res.status(404).json({ error: 'PDF file not found' });
+      return;
+    }
+
+    const fileId = searchRes.data.files[0].id;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    
+    // Stream the file
+    const fileRes = await driveApi.files.get(
+      { fileId: fileId, alt: 'media' },
+      { responseType: 'stream' }
+    );
+
+    fileRes.data
+      .on('end', () => {})
+      .on('error', (err) => {
+        console.error('Error downloading file:', err);
+        if (!res.headersSent) res.status(500).send('Error downloading file');
+      })
+      .pipe(res);
+
+  } catch (error) {
+    console.error('Error streaming PDF:', error);
+    if (!res.headersSent) res.status(500).json({ error: 'Failed to stream PDF' });
+  }
+}
+
+module.exports = {
+  findFolderByName,
+  getAlbumsInFolder,
+  streamPdf
+};
