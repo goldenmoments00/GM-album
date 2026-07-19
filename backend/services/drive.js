@@ -97,13 +97,13 @@ async function getAlbumsInFolder(folderId) {
  * @param {string} fileName - The name of the PDF file
  * @param {object} res - Express response object to pipe the stream to
  */
-async function streamPdf(folderId, fileName, res) {
+async function streamPdf(folderId, fileName, res, rangeHeader) {
   if (useMock) {
     const pdfPath = path.join(MOCK_DRIVE_PATH, folderId, fileName);
     if (fs.existsSync(pdfPath)) {
-      res.setHeader('Content-Type', 'application/pdf');
-      const stream = fs.createReadStream(pdfPath);
-      stream.pipe(res);
+      // sendFile natively supports HTTP 206 Partial Content (Range Requests)
+      // This allows PDF.js to instantly load thumbnails without downloading the whole file!
+      res.sendFile(pdfPath);
       return;
     }
     res.status(404).send('PDF not found in mock drive');
@@ -115,7 +115,7 @@ async function streamPdf(folderId, fileName, res) {
     const query = `name = '${fileName}' and '${folderId}' in parents and mimeType = 'application/pdf' and trashed = false`;
     const searchRes = await driveApi.files.list({
       q: query,
-      fields: 'files(id, name)',
+      fields: 'files(id, name, size)',
     });
 
     if (searchRes.data.files.length === 0) {
@@ -124,14 +124,29 @@ async function streamPdf(folderId, fileName, res) {
     }
 
     const fileId = searchRes.data.files[0].id;
-
-    res.setHeader('Content-Type', 'application/pdf');
     
-    // Stream the file
+    const requestHeaders = {};
+    if (rangeHeader) {
+      requestHeaders['Range'] = rangeHeader;
+    }
+
+    // Stream the file with Range support
     const fileRes = await driveApi.files.get(
       { fileId: fileId, alt: 'media' },
-      { responseType: 'stream' }
+      { headers: requestHeaders, responseType: 'stream' }
     );
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    // Proxy the Google Drive range headers back to the client
+    if (fileRes.headers['content-range']) {
+      res.status(206);
+      res.setHeader('Content-Range', fileRes.headers['content-range']);
+    }
+    if (fileRes.headers['content-length']) {
+      res.setHeader('Content-Length', fileRes.headers['content-length']);
+    }
 
     fileRes.data
       .on('end', () => {})

@@ -64,8 +64,9 @@ router.get('/pdf/:id/:file', async (req, res) => {
   try {
     const folderId = req.params.id;
     const fileName = req.params.file;
+    const rangeHeader = req.headers.range;
     
-    await driveService.streamPdf(folderId, fileName, res);
+    await driveService.streamPdf(folderId, fileName, res, rangeHeader);
   } catch (error) {
     console.error('PDF Stream Error:', error);
     res.status(500).json({ error: 'Failed to stream PDF' });

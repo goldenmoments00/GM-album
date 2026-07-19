@@ -20,7 +20,7 @@ export default function AlbumThumbnail({ folderId, fileName }) {
         const page = await pdf.getPage(1);
         
         // Render at a small scale for thumbnail
-        const viewport = page.getViewport({ scale: 0.3 }); 
+        const viewport = page.getViewport({ scale: 0.5 }); 
         
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d');
@@ -53,7 +53,7 @@ export default function AlbumThumbnail({ folderId, fileName }) {
     return (
       <div style={{ 
         width: '100%', 
-        height: '200px', 
+        height: '220px', 
         backgroundColor: 'var(--color-grey-light)',
         display: 'flex', 
         alignItems: 'center', 
@@ -69,13 +69,48 @@ export default function AlbumThumbnail({ folderId, fileName }) {
   return (
     <div style={{
       width: '100%',
-      height: '200px',
+      height: '220px',
       marginBottom: '20px',
-      borderRadius: '8px',
-      overflow: 'hidden',
-      boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      perspective: '1000px'
     }}>
-      <img src={thumbnail} alt="Album Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      {/* Book Cover Container */}
+      <div style={{
+        height: '100%',
+        position: 'relative',
+        boxShadow: '12px 12px 24px rgba(0,0,0,0.3), inset -2px 0 5px rgba(0,0,0,0.1)',
+        borderRadius: '3px 12px 12px 3px',
+        overflow: 'hidden',
+        backgroundColor: '#fff'
+      }}>
+        <img src={thumbnail} alt="Album Cover" style={{ height: '100%', width: 'auto', display: 'block', objectFit: 'contain' }} />
+        
+        {/* Leather/Dark Spine */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, bottom: 0,
+          width: '35px',
+          background: 'linear-gradient(to right, #111 0%, #222 15%, #1a1a1a 80%, #000 100%)',
+          zIndex: 5
+        }}></div>
+
+        {/* Hinge Groove (Crease) */}
+        <div style={{
+          position: 'absolute', top: 0, left: '35px', bottom: 0,
+          width: '12px',
+          background: 'linear-gradient(to right, rgba(0,0,0,0.4) 0%, rgba(255,255,255,0.1) 40%, rgba(0,0,0,0.2) 80%, rgba(0,0,0,0) 100%)',
+          zIndex: 5
+        }}></div>
+
+        {/* Overall Gloss Overlay */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'linear-gradient(120deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 30%, rgba(0,0,0,0.05) 100%)',
+          pointerEvents: 'none',
+          zIndex: 10
+        }}></div>
+      </div>
     </div>
   );
 }
