@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HTMLFlipBook from 'react-pageflip';
-import { ArrowLeft, ZoomIn, ZoomOut, Check, MessageSquare, Maximize } from 'lucide-react';
+import { ArrowLeft, Check, MessageSquare, Maximize, RotateCcw } from 'lucide-react';
 import FeedbackModal from '../components/FeedbackModal';
 
 // GLOBAL HACK: Override Touch and Mouse Event coordinates when in Portrait mode.
@@ -46,7 +46,14 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
   const [immersiveMode, setImmersiveMode] = useState(false);
   
   const bookRef = useRef();
+  const flipbookWrapperRef = useRef(null);
   const panRef = useRef({ startX: 0, startY: 0, lastX: 0, lastY: 0 });
+  const pointersRef = useRef(new Map());
+  const pinchRef = useRef(null);
+  const lastTapRef = useRef(0);
+  
+  // State ref for event handlers to always access the latest values without rebinding
+  const stateRef = useRef({ scale, pan, pageWidth: 300, pageHeight: 400, availW: window.innerWidth, availH: window.innerHeight });
 
   useEffect(() => {
     const updateSize = () => setScreenSize({ w: window.innerWidth, h: window.innerHeight });
@@ -84,22 +91,157 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
     navigate('/dashboard');
   };
 
+  const updateZoomAndPan = (newScale, newPanX, newPanY, pWidth, pHeight, aW, aH) => {
+    if (newScale === 1) {
+      setScale(1);
+      setPan({ x: 0, y: 0 });
+      return;
+    }
+    const scaledBookW = (pWidth * 2) * newScale;
+    const scaledBookH = pHeight * newScale;
+    
+    const maxPanX = Math.max(0, (scaledBookW - aW) / 2);
+    const maxPanY = Math.max(0, (scaledBookH - aH) / 2);
+    
+    const clampedX = Math.min(Math.max(newPanX, -maxPanX), maxPanX);
+    const clampedY = Math.min(Math.max(newPanY, -maxPanY), maxPanY);
+    
+    setScale(newScale);
+    setPan({ x: clampedX, y: clampedY });
+  };
+
   const onPointerDown = (e) => {
-    if (scale === 1) return;
-    setIsDragging(true);
-    panRef.current = { startX: e.clientX, startY: e.clientY, lastX: pan.x, lastY: pan.y };
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    
+    if (pointersRef.current.size === 1) {
+      const now = Date.now();
+      const s = stateRef.current;
+      
+      if (now - lastTapRef.current < 300) {
+        // Double tap
+        if (s.scale > 1) {
+          updateZoomAndPan(1, 0, 0, s.pageWidth, s.pageHeight, s.availW, s.availH);
+        } else {
+          const dx = e.clientX - s.availW / 2;
+          const dy = e.clientY - s.availH / 2;
+          const newScale = 2;
+          const scaleRatio = newScale / s.scale;
+          const newPanX = s.pan.x * scaleRatio - dx * (scaleRatio - 1);
+          const newPanY = s.pan.y * scaleRatio - dy * (scaleRatio - 1);
+          updateZoomAndPan(newScale, newPanX, newPanY, s.pageWidth, s.pageHeight, s.availW, s.availH);
+        }
+        lastTapRef.current = 0;
+      } else {
+        lastTapRef.current = now;
+      }
+      
+      if (s.scale > 1) setIsDragging(true);
+      panRef.current = { startX: e.clientX, startY: e.clientY, lastX: s.pan.x, lastY: s.pan.y };
+    }
   };
 
   const onPointerMove = (e) => {
-    if (!isDragging || scale === 1) return;
-    const dx = e.clientX - panRef.current.startX;
-    const dy = e.clientY - panRef.current.startY;
-    setPan({ x: panRef.current.lastX + dx, y: panRef.current.lastY + dy });
+    if (!pointersRef.current.has(e.pointerId)) return;
+    pointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    const s = stateRef.current;
+
+    if (pointersRef.current.size === 2) {
+      const pts = Array.from(pointersRef.current.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const cx = (pts[0].x + pts[1].x) / 2;
+      const cy = (pts[0].y + pts[1].y) / 2;
+      
+      if (!pinchRef.current) {
+        pinchRef.current = { startDist: dist, startScale: s.scale, cx, cy, lastPan: s.pan };
+        setIsDragging(false);
+      } else {
+        const zoomFactor = dist / pinchRef.current.startDist;
+        const newScale = Math.min(Math.max(1, pinchRef.current.startScale * zoomFactor), 4);
+        
+        const dx = pinchRef.current.cx - s.availW / 2;
+        const dy = pinchRef.current.cy - s.availH / 2;
+        const scaleRatio = newScale / pinchRef.current.startScale;
+        
+        const newPanX = pinchRef.current.lastPan.x * scaleRatio - dx * (scaleRatio - 1);
+        const newPanY = pinchRef.current.lastPan.y * scaleRatio - dy * (scaleRatio - 1);
+        
+        const dragDx = cx - pinchRef.current.cx;
+        const dragDy = cy - pinchRef.current.cy;
+        
+        updateZoomAndPan(newScale, newPanX + dragDx, newPanY + dragDy, s.pageWidth, s.pageHeight, s.availW, s.availH);
+      }
+    } else if (pointersRef.current.size === 1 && isDragging) {
+      const dx = e.clientX - panRef.current.startX;
+      const dy = e.clientY - panRef.current.startY;
+      updateZoomAndPan(s.scale, panRef.current.lastX + dx, panRef.current.lastY + dy, s.pageWidth, s.pageHeight, s.availW, s.availH);
+    }
   };
 
-  const onPointerUp = () => setIsDragging(false);
+  const onPointerUp = (e) => {
+    pointersRef.current.delete(e.pointerId);
+    if (pointersRef.current.size < 2) pinchRef.current = null;
+    if (pointersRef.current.size === 0) {
+      setIsDragging(false);
+    } else if (pointersRef.current.size === 1) {
+      const remaining = Array.from(pointersRef.current.values())[0];
+      panRef.current = { startX: remaining.x, startY: remaining.y, lastX: pan.x, lastY: pan.y };
+    }
+  };
+
+  useEffect(() => {
+    const el = flipbookWrapperRef.current;
+    if (!el) return;
+    const handleWheel = (e) => {
+      e.preventDefault();
+      const s = stateRef.current;
+      const delta = e.deltaY > 0 ? -0.15 : 0.15;
+      const newScale = Math.min(Math.max(1, s.scale + delta), 4);
+      
+      if (newScale === s.scale) return;
+      
+      const dx = e.clientX - s.availW / 2;
+      const dy = e.clientY - s.availH / 2;
+      const scaleRatio = newScale / s.scale;
+      
+      const newPanX = s.pan.x * scaleRatio - dx * (scaleRatio - 1);
+      const newPanY = s.pan.y * scaleRatio - dy * (scaleRatio - 1);
+      
+      updateZoomAndPan(newScale, newPanX, newPanY, s.pageWidth, s.pageHeight, s.availW, s.availH);
+    };
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    return () => el.removeEventListener('wheel', handleWheel);
+  }, []);
 
   const isPortraitLayout = screenSize.w < 768 && screenSize.h > screenSize.w;
+
+  // Calculate exact pixel dimensions for perfect aspect ratio fit
+  const availW = isPortraitLayout ? screenSize.h : screenSize.w;
+  const availH = isPortraitLayout ? screenSize.w : screenSize.h;
+  let pageWidth = 300;
+  let pageHeight = 400;
+
+  if (dimensions.baseWidth && dimensions.baseHeight) {
+    const bookRatio = (dimensions.baseWidth * 2) / dimensions.baseHeight;
+    const screenRatio = availW / availH;
+
+    if (bookRatio > screenRatio) {
+      // Limited by width
+      const maxW = availW - 20; // 10px padding on edges
+      pageWidth = maxW / 2;
+      pageHeight = maxW / bookRatio;
+    } else {
+      // Limited by height
+      const maxH = availH - 20; // 10px padding on edges
+      pageHeight = maxH;
+      pageWidth = (maxH * bookRatio) / 2;
+    }
+  }
+
+  // Sync latest values to ref for event handlers
+  useEffect(() => {
+    stateRef.current = { scale, pan, pageWidth, pageHeight, availW, availH };
+  }, [scale, pan, pageWidth, pageHeight, availW, availH]);
 
   const containerStyle = {
     display: 'flex',
@@ -124,7 +266,7 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
       paddingTop: 'env(safe-area-inset-left, 0px)',
       paddingBottom: 'env(safe-area-inset-right, 0px)'
     } : {
-      width: '100dvw',
+      width: '100%',
       height: '100dvh',
       paddingTop: 'env(safe-area-inset-top, 0px)',
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -184,12 +326,6 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           <button className="btn-outline" style={{ padding: '8px' }} onClick={toggleFullscreen} title="Toggle Fullscreen">
             <Maximize size={18} />
           </button>
-          <button className="btn-outline" style={{ padding: '8px' }} onClick={() => setScale(s => Math.max(1, s - 0.2))}>
-            <ZoomOut size={18} />
-          </button>
-          <button className="btn-outline" style={{ padding: '8px' }} onClick={() => setScale(s => Math.min(3, s + 0.2))}>
-            <ZoomIn size={18} />
-          </button>
         </div>
       </div>
 
@@ -221,8 +357,8 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
             left: '50%',
             top: '50%',
             transform: 'translate(0, -50%)',
-            width: `${dimensions.width}px`,
-            height: `${dimensions.height}px`,
+            width: `${pageWidth * 2}px`,
+            height: `${pageHeight}px`,
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -240,6 +376,7 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
       </div>
 
       <div 
+        ref={flipbookWrapperRef}
         className={`flipbook-container ${pages.length > 0 && currentPage >= pages.length - 2 && bookState === 'read' ? 'at-end' : ''}`} 
         style={{ 
           position: 'absolute',
@@ -265,13 +402,9 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
         }}>
           {pages.length > 0 && (
             <HTMLFlipBook
-              width={dimensions.width}
-              height={dimensions.height}
-              size="stretch"
-              minWidth={100}
-              maxWidth={1000}
-              minHeight={100}
-              maxHeight={1533}
+              width={pageWidth}
+              height={pageHeight}
+              size="fixed"
               maxShadowOpacity={0.8}
               showCover={true}
               mobileScrollSupport={true}
@@ -298,6 +431,34 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           )}
         </div>
       </div>
+
+      {/* Floating Reset Zoom Button */}
+      <button 
+        onClick={() => updateZoomAndPan(1, 0, 0, pageWidth, pageHeight, availW, availH)}
+        style={{
+          position: 'absolute',
+          bottom: '30px',
+          right: '20px',
+          backgroundColor: 'rgba(255,255,255,0.95)',
+          border: '1px solid #e0e0e0',
+          borderRadius: '24px',
+          padding: '10px 20px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
+          zIndex: 100,
+          cursor: 'pointer',
+          fontWeight: '600',
+          color: '#333',
+          opacity: scale > 1 ? 1 : 0,
+          transform: scale > 1 ? 'translateY(0) scale(1)' : 'translateY(15px) scale(0.9)',
+          pointerEvents: scale > 1 ? 'auto' : 'none',
+          transition: 'opacity 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
+        }}
+      >
+        <RotateCcw size={18} /> Reset Zoom
+      </button>
 
       {showFeedback && (
         <FeedbackModal
