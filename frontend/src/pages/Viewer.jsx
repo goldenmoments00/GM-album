@@ -20,13 +20,24 @@ export default function Viewer({ session }) {
     else loadingMessage = "Adding finishing touches...";
 
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#1a120b' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#ffffff' }}>
+        <img 
+          src="/loading.gif" 
+          alt="Loading..." 
+          style={{ 
+            width: 'min(80vw, 600px)', 
+            aspectRatio: '16/9', 
+            objectFit: 'cover', 
+            objectPosition: 'top',
+            marginBottom: '10px' 
+          }} 
+        />
         <h2 style={{ color: 'var(--color-gold)', marginBottom: '10px' }}>Loading Your Album...</h2>
-        <p style={{ color: 'var(--color-grey-dark)', marginBottom: '20px', fontStyle: 'italic' }}>{loadingMessage}</p>
-        <div style={{ width: '300px', height: '4px', backgroundColor: 'var(--color-grey-soft)', borderRadius: '2px', overflow: 'hidden' }}>
+        <p style={{ color: '#666', marginBottom: '20px', fontStyle: 'italic' }}>{loadingMessage}</p>
+        <div style={{ width: '300px', height: '4px', backgroundColor: '#eee', borderRadius: '2px', overflow: 'hidden' }}>
           <div style={{ width: `${displayProgress}%`, height: '100%', backgroundColor: 'var(--color-gold)', transition: 'width 0.2s ease-out' }}></div>
         </div>
-        <p style={{ marginTop: '10px', color: 'var(--color-grey-dark)', fontWeight: '500' }}>{displayProgress}%</p>
+        <p style={{ marginTop: '10px', color: '#666', fontWeight: '500' }}>{displayProgress}%</p>
       </div>
     );
   }

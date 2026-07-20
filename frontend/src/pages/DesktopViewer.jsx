@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HTMLFlipBook from 'react-pageflip';
-import { ArrowLeft, Check, MessageSquare, Maximize, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Check, MessageSquare, Maximize, RotateCcw, ZoomIn, ZoomOut, Pencil } from 'lucide-react';
 import FeedbackModal from '../components/FeedbackModal';
+import MobileAnnotationEditor from '../components/MobileAnnotationEditor';
 
 // GLOBAL HACK: Override Touch and Mouse Event coordinates when in Portrait mode.
 // This allows the physics engine and our panning logic to receive logically correct X/Y coordinates.
@@ -44,6 +45,7 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
   const [bookState, setBookState] = useState('read');
   const [screenSize, setScreenSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [immersiveMode, setImmersiveMode] = useState(false);
+  const [showAnnotationEditor, setShowAnnotationEditor] = useState(false);
   
   const bookRef = useRef();
   const flipbookWrapperRef = useRef(null);
@@ -275,6 +277,13 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
     })
   };
 
+  const getPagesToAnnotate = () => {
+    if (pages.length === 0) return [];
+    if (currentPage === 0) return [pages[0]?.imgSrc];
+    if (currentPage >= pages.length - 2) return [pages[pages.length - 1]?.imgSrc];
+    return [pages[currentPage]?.imgSrc, pages[currentPage + 1]?.imgSrc].filter(Boolean);
+  };
+
   return (
     <div style={containerStyle} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp}>
       
@@ -466,6 +475,48 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           totalPages={pages.length}
           folderId={session.folderId}
           fileId={fileId}
+        />
+      )}
+
+      {/* Mobile Floating Action Button */}
+      {window.innerWidth <= 768 && !showAnnotationEditor && (
+        <button 
+          onClick={() => setShowAnnotationEditor(true)}
+          style={{
+            position: 'absolute',
+            bottom: '30px',
+            right: '20px',
+            padding: '12px 20px',
+            borderRadius: '30px',
+            backgroundColor: 'rgba(20, 20, 20, 0.75)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            display: 'flex',
+            gap: '8px',
+            alignItems: 'center',
+            color: 'white',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+            zIndex: 50,
+            cursor: 'pointer',
+            fontWeight: '500',
+            fontSize: '0.9rem'
+          }}
+        >
+          <Pencil size={18} />
+          Suggest Changes
+        </button>
+      )}
+
+      {/* Mobile Annotation Editor */}
+      {showAnnotationEditor && (
+        <MobileAnnotationEditor 
+          images={getPagesToAnnotate()} 
+          onClose={() => setShowAnnotationEditor(false)}
+          metadata={{
+            albumId: decodeURIComponent(fileId).replace('.pdf', ''),
+            pageInfo: currentPage === 0 ? 'Cover' : currentPage >= pages.length - 2 ? 'Back Cover' : `Pages ${currentPage + 1}-${currentPage + 2}`
+          }}
         />
       )}
     </div>

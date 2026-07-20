@@ -254,4 +254,15 @@ h6 {
   touch-action: none;
 }
 
+.login-cat-img {
+  width: min(90vw, 400px);
+  margin-bottom: -121px; /* PC crop */
+  -webkit-mask-image: radial-gradient(ellipse at 50% 100%, black 40%, transparent 70%);
+  mask-image: radial-gradient(ellipse at 50% 100%, black 40%, transparent 70%);
+}
 
+@media (max-width: 768px) {
+  .login-cat-img {
+    margin-bottom: -113px; /* Mobile crop */
+  }
+}

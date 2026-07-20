@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, ChevronRight } from 'lucide-react';
 
 export default function Login({ onLogin }) {
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(localStorage.getItem('savedPassword') || '');
+  const [rememberMe, setRememberMe] = useState(localStorage.getItem('rememberMe') === 'true');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -34,6 +35,14 @@ export default function Login({ onLogin }) {
         throw new Error(data.error || 'Login failed');
       }
 
+      if (rememberMe) {
+        localStorage.setItem('savedPassword', password.trim());
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        localStorage.removeItem('savedPassword');
+        localStorage.removeItem('rememberMe');
+      }
+
       onLogin({
         folderId: data.folderId,
         albumId: data.albumId,
@@ -53,7 +62,14 @@ export default function Login({ onLogin }) {
   };
 
   return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+      <div style={{ overflow: 'hidden', display: 'flex', justifyContent: 'center', marginBottom: '-10px', zIndex: 10, position: 'relative' }}>
+        <img 
+          src="/login.gif" 
+          alt="GoldenMoment" 
+          className="login-cat-img"
+        />
+      </div>
       <div className="glass-panel" style={{ maxWidth: '400px', width: '100%', padding: '40px 30px', textAlign: 'center' }}>
         <h1 style={{ marginBottom: '10px', color: 'var(--color-gold)' }}>GoldenMoment</h1>
         <p style={{ marginBottom: '30px', color: 'var(--color-grey-dark)', fontSize: '0.9rem' }}>
@@ -71,6 +87,18 @@ export default function Login({ onLogin }) {
               onChange={(e) => setPassword(e.target.value)}
               style={{ paddingLeft: '45px' }}
             />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', marginTop: '-10px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', color: 'var(--color-grey-dark)', fontSize: '0.85rem' }}>
+              <input 
+                type="checkbox" 
+                checked={rememberMe} 
+                onChange={(e) => setRememberMe(e.target.checked)} 
+                style={{ accentColor: 'var(--color-gold)', width: '16px', height: '16px', cursor: 'pointer' }}
+              />
+              Remember Me
+            </label>
           </div>
 
           {error && <p style={{ color: '#e74c3c', fontSize: '0.85rem', margin: 0 }}>{error}</p>}
