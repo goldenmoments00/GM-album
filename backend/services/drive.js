@@ -2,17 +2,24 @@ const fs = require('fs');
 const path = require('path');
 const { google } = require('googleapis');
 
+// Resolve relative GOOGLE_APPLICATION_CREDENTIALS path relative to backend directory
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS && !path.isAbsolute(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+  const resolvedKeyPath = path.resolve(__dirname, '../', process.env.GOOGLE_APPLICATION_CREDENTIALS);
+  if (fs.existsSync(resolvedKeyPath)) {
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = resolvedKeyPath;
+  }
+}
+
 // Helper to determine if we should use the mock drive for local testing
-const useMock = !process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const useMock = (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) && !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
 const MOCK_DRIVE_PATH = path.join(__dirname, '../../mock_drive');
 
 let driveApi = null;
 
 if (!useMock) {
   // Initialize Google Drive API
-  // It expects GOOGLE_APPLICATION_CREDENTIALS to point to the JSON key file
-  // OR expects standard ENV variables if hosted
   const auth = new google.auth.GoogleAuth({
+    keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
     scopes: ['https://www.googleapis.com/auth/drive.readonly'],
   });
   
