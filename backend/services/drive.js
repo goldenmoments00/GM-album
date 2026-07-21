@@ -96,17 +96,19 @@ async function findFolderByName(folderName) {
     return null;
   }
 
-  const rootFolderId = process.env.DRIVE_ROOT_FOLDER_ID;
-  
-  try {
-    // 1. If rootFolderId is set, search inside parents first
-    if (rootFolderId) {
-      const exactQuery = `name = '${cleanName}' and mimeType = 'application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed = false`;
-      const res = await driveApi.files.list({
-        q: exactQuery,
-        fields: 'files(id, name)',
-        spaces: 'drive',
-      });
+    // Strip any accidental quotes and provide a hardcoded fallback in case Vercel env is missing!
+    const rootFolderId = (process.env.DRIVE_ROOT_FOLDER_ID || '1jnkps6an8eksyMu4TmC96QbXqX6l2xBi').replace(/^['"]|['"]$/g, '').trim();
+    
+    try {
+      // 1. If rootFolderId is set, search inside parents first
+      if (rootFolderId) {
+        console.log(`[GoogleDrive] Searching in root folder ID: "${rootFolderId}" for album: "${cleanName}"`);
+        const exactQuery = `name = '${cleanName}' and mimeType = 'application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed = false`;
+        const res = await driveApi.files.list({
+          q: exactQuery,
+          fields: 'files(id, name)',
+          spaces: 'drive',
+        });
 
       if (res.data.files && res.data.files.length > 0) {
         console.log(`[GoogleDrive] Found folder "${cleanName}" in root parent:`, res.data.files[0].id);
