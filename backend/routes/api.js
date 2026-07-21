@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const driveService = require('../services/drive');
+const dbService = require('../services/db');
 
 // In a real application, we might want to use JWTs or sessions, 
 // but since this is a simple portal, the frontend can just keep the folder ID in memory
@@ -88,6 +89,84 @@ router.post('/feedback', async (req, res) => {
   } catch (error) {
     console.error('Feedback Error:', error);
     res.status(500).json({ error: 'Failed to submit feedback' });
+  }
+});
+
+/**
+ * GET /api/project-status/:id
+ */
+router.get('/project-status/:id', (req, res) => {
+  try {
+    res.json(dbService.getProjectStatus(req.params.id));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch status' });
+  }
+});
+
+/**
+ * GET /api/videos/:id
+ */
+router.get('/videos/:id', async (req, res) => {
+  try {
+    const folderId = req.params.id;
+    const videos = await driveService.getVideosInFolder(folderId);
+    res.json({ videos });
+  } catch (error) {
+    console.error('Video Info Error:', error);
+    res.status(404).json({ error: 'Videos not found' });
+  }
+});
+
+/**
+ * GET /api/video/stream/:id/:file
+ */
+router.get('/video/stream/:id/:file', async (req, res) => {
+  try {
+    const folderId = req.params.id;
+    const fileName = req.params.file;
+    const rangeHeader = req.headers.range;
+    await driveService.streamVideo(folderId, fileName, res, rangeHeader);
+  } catch (error) {
+    console.error('Video Stream Error:', error);
+    res.status(500).json({ error: 'Failed to stream video' });
+  }
+});
+
+/**
+ * GET /api/video/data/:id/:file
+ */
+router.get('/video/data/:id/:file', (req, res) => {
+  try {
+    const data = dbService.getVideoData(req.params.id, req.params.file);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to get video data' });
+  }
+});
+
+/**
+ * POST /api/video/comment
+ */
+router.post('/video/comment', (req, res) => {
+  try {
+    const { folderId, fileId, timestamp, commentText } = req.body;
+    const comments = dbService.addVideoComment(folderId, fileId, timestamp, commentText);
+    res.json({ success: true, comments });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to add comment' });
+  }
+});
+
+/**
+ * POST /api/video/status
+ */
+router.post('/video/status', (req, res) => {
+  try {
+    const { folderId, fileId, status } = req.body;
+    const video = dbService.updateVideoStatus(folderId, fileId, status);
+    res.json({ success: true, video });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update status' });
   }
 });
 

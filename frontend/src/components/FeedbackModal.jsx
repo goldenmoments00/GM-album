@@ -6,6 +6,8 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -13,7 +15,8 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
 
     setSubmitting(true);
     try {
-      const response = await fetch('/api/feedback', {
+      // Still log to backend if needed
+      await fetch('/api/feedback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -26,9 +29,18 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
         })
       });
 
-      if (response.ok) {
+      const text = `*Feedback for Album: ${fileId.replace(/\.pdf$/i, '')}*\nPages: ${pages}\n\nNotes:\n${comment}`;
+
+      if (isMobile) {
+        const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(url, '_blank');
         setSuccess(true);
         setTimeout(() => onClose(), 2000);
+      } else {
+        navigator.clipboard.writeText(text).then(() => {
+          setSuccess(true);
+          setTimeout(() => onClose(), 2500);
+        });
       }
     } catch (err) {
       console.error(err);
@@ -60,8 +72,8 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
         
         {success ? (
           <div style={{ textAlign: 'center', padding: '40px 0', color: 'green' }}>
-            <h3 style={{ marginBottom: '10px' }}>Feedback Submitted!</h3>
-            <p>Our team will review your requests.</p>
+            <h3 style={{ marginBottom: '10px' }}>{isMobile ? 'Redirecting to WhatsApp...' : 'Copied to Clipboard!'}</h3>
+            <p>{isMobile ? 'Please send the message to the editor.' : 'Please paste the message in WhatsApp for the editor.'}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -95,7 +107,7 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
             </div>
 
             <button type="submit" className="btn-gold" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <Send size={18} /> {submitting ? 'Submitting...' : 'Send Request'}
+              <Send size={18} /> {submitting ? 'Processing...' : (isMobile ? 'Send via WhatsApp' : 'Copy to Clipboard')}
             </button>
           </form>
         )}

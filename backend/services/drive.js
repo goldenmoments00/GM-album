@@ -162,8 +162,120 @@ async function streamPdf(folderId, fileName, res, rangeHeader) {
   }
 }
 
+async function getVideosInFolder(folderId) {
+  if (useMock) {
+    const folderPath = path.join(MOCK_DRIVE_PATH, folderId);
+    let videos = [];
+    if (fs.existsSync(folderPath)) {
+      const files = fs.readdirSync(folderPath);
+      videos = files.filter(f => f.toLowerCase().endsWith('.mp4') || f.toLowerCase().endsWith('.mov'));
+    }
+    
+    // Also check Videos subfolder for backward compatibility in mock
+    const videosPath = path.join(MOCK_DRIVE_PATH, folderId, 'Videos');
+    if (fs.existsSync(videosPath)) {
+      const subFiles = fs.readdirSync(videosPath);
+      const subVideos = subFiles.filter(f => f.toLowerCase().endsWith('.mp4') || f.toLowerCase().endsWith('.mov'));
+      videos = [...videos, ...subVideos];
+    }
+    
+    return videos.map(file => ({
+      title: file.replace(/\.(mp4|mov)$/i, ''),
+      file: file
+    }));
+  }
+
+  try {
+    // Search directly in folderId (matching real Google Drive screenshot structure)
+    const query = `'${folderId}' in parents and (mimeType = 'video/mp4' or mimeType = 'video/quicktime' or mimeType contains 'video/') and trashed = false`;
+    
+    const res = await driveApi.files.list({
+      q: query,
+      fields: 'files(id, name)',
+    });
+
+    return res.data.files.map(file => ({
+      title: file.name.replace(/\.[^/.]+$/, ''), // remove any extension
+      file: file.name
+    }));
+  } catch (error) {
+    console.error('Error getting videos:', error);
+    return [];
+  }
+}
+
+async function streamVideo(folderId, fileName, res, rangeHeader) {
+  if (useMock) {
+    let videoPath = path.join(MOCK_DRIVE_PATH, folderId, fileName);
+    if (!fs.existsSync(videoPath)) {
+      videoPath = path.join(MOCK_DRIVE_PATH, folderId, 'Videos', fileName);
+    }
+    if (fs.existsSync(videoPath)) {
+      res.sendFile(videoPath);
+      return;
+    }
+    res.status(404).send('Video not found in mock drive');
+    return;
+  }
+
+  try {
+    // Find the video file by name directly in the folderId
+    const query = `name = '${fileName}' and '${folderId}' in parents and (mimeType = 'video/mp4' or mimeType = 'video/quicktime' or mimeType contains 'video/') and trashed = false`;
+    const searchRes = await driveApi.files.list({
+      q: query,
+      fields: 'files(id, name, size)',
+    });
+
+    if (searchRes.data.files.length === 0) {
+      res.status(404).json({ error: 'Video file not found' });
+      return;
+    }
+
+    const fileId = searchRes.data.files[0].id;
+    const fileSize = searchRes.data.files[0].size;
+    
+    const requestHeaders = {};
+    if (rangeHeader) {
+      requestHeaders['Range'] = rangeHeader;
+    }
+
+    const fileRes = await driveApi.files.get(
+      { fileId: fileId, alt: 'media' },
+      { headers: requestHeaders, responseType: 'stream' }
+    );
+
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    if (fileRes.headers['content-range']) {
+      res.status(206);
+      res.setHeader('Content-Range', fileRes.headers['content-range']);
+    }
+    
+    if (fileRes.headers['content-length']) {
+      res.setHeader('Content-Length', fileRes.headers['content-length']);
+    } else if (fileSize && !rangeHeader) {
+      res.setHeader('Content-Length', fileSize);
+    }
+
+    fileRes.data
+      .on('end', () => {})
+      .on('error', (err) => {
+        console.error('Error downloading video:', err);
+        if (!res.headersSent) res.status(500).send('Error downloading video');
+      })
+      .pipe(res);
+
+  } catch (error) {
+    console.error('Error streaming video:', error);
+    if (!res.headersSent) res.status(500).json({ error: 'Failed to stream video' });
+  }
+}
+
 module.exports = {
   findFolderByName,
   getAlbumsInFolder,
-  streamPdf
+  streamPdf,
+  getVideosInFolder,
+  streamVideo
 };

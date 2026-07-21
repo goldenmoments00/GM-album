@@ -9,31 +9,57 @@ import MobileAnnotationEditor from '../components/MobileAnnotationEditor';
 // This allows the physics engine and our panning logic to receive logically correct X/Y coordinates.
 const isPortrait = () => window.innerWidth < 768 && window.innerHeight > window.innerWidth;
 
-if (typeof Touch !== 'undefined') {
-  const origTouchX = Object.getOwnPropertyDescriptor(Touch.prototype, 'clientX');
-  const origTouchY = Object.getOwnPropertyDescriptor(Touch.prototype, 'clientY');
-  if (origTouchX && origTouchY) {
-    Object.defineProperty(Touch.prototype, 'clientX', { get: function() { return isPortrait() ? origTouchY.get.call(this) : origTouchX.get.call(this); } });
-    Object.defineProperty(Touch.prototype, 'pageX', { get: function() { return isPortrait() ? origTouchY.get.call(this) : origTouchX.get.call(this); } });
-    Object.defineProperty(Touch.prototype, 'clientY', { get: function() { return isPortrait() ? window.innerWidth - origTouchX.get.call(this) : origTouchY.get.call(this); } });
-    Object.defineProperty(Touch.prototype, 'pageY', { get: function() { return isPortrait() ? window.innerWidth - origTouchX.get.call(this) : origTouchY.get.call(this); } });
-  }
-}
+let originalDescriptors = {};
 
-const overrideEventCoord = (Proto) => {
-  if (typeof Proto !== 'undefined') {
-    const origX = Object.getOwnPropertyDescriptor(Proto.prototype, 'clientX') || Object.getOwnPropertyDescriptor(MouseEvent.prototype, 'clientX');
-    const origY = Object.getOwnPropertyDescriptor(Proto.prototype, 'clientY') || Object.getOwnPropertyDescriptor(MouseEvent.prototype, 'clientY');
-    if (origX && origY) {
-      Object.defineProperty(Proto.prototype, 'clientX', { get: function() { return isPortrait() ? origY.get.call(this) : origX.get.call(this); } });
-      Object.defineProperty(Proto.prototype, 'pageX', { get: function() { return isPortrait() ? origY.get.call(this) : origX.get.call(this); } });
-      Object.defineProperty(Proto.prototype, 'clientY', { get: function() { return isPortrait() ? window.innerWidth - origX.get.call(this) : origY.get.call(this); } });
-      Object.defineProperty(Proto.prototype, 'pageY', { get: function() { return isPortrait() ? window.innerWidth - origX.get.call(this) : origY.get.call(this); } });
+const applyCoordinateHack = () => {
+  if (typeof window === 'undefined') return;
+  
+  const setupForProto = (Proto, name) => {
+    if (!Proto || !Proto.prototype) return;
+    if (originalDescriptors[name]) return; // Already applied
+    
+    const getDesc = (prop) => Object.getOwnPropertyDescriptor(Proto.prototype, prop) || 
+                              (typeof MouseEvent !== 'undefined' ? Object.getOwnPropertyDescriptor(MouseEvent.prototype, prop) : null);
+                              
+    const origX = getDesc('clientX');
+    const origY = getDesc('clientY');
+    const origPageX = getDesc('pageX');
+    const origPageY = getDesc('pageY');
+    
+    if (origX && origY && origX.configurable) {
+      originalDescriptors[name] = { clientX: origX, clientY: origY, pageX: origPageX, pageY: origPageY };
+      
+      Object.defineProperty(Proto.prototype, 'clientX', { get: function() { return isPortrait() ? origY.get.call(this) : origX.get.call(this); }, configurable: true });
+      Object.defineProperty(Proto.prototype, 'clientY', { get: function() { return isPortrait() ? window.innerWidth - origX.get.call(this) : origY.get.call(this); }, configurable: true });
+      
+      if (origPageX && origPageY) {
+        Object.defineProperty(Proto.prototype, 'pageX', { get: function() { return isPortrait() ? origPageY.get.call(this) : origPageX.get.call(this); }, configurable: true });
+        Object.defineProperty(Proto.prototype, 'pageY', { get: function() { return isPortrait() ? window.innerWidth - origPageX.get.call(this) : origPageY.get.call(this); }, configurable: true });
+      }
     }
-  }
+  };
+
+  if (typeof Touch !== 'undefined') setupForProto(Touch, 'Touch');
+  if (typeof MouseEvent !== 'undefined') setupForProto(MouseEvent, 'MouseEvent');
+  if (typeof PointerEvent !== 'undefined') setupForProto(PointerEvent, 'PointerEvent');
 };
-overrideEventCoord(window.MouseEvent);
-overrideEventCoord(window.PointerEvent);
+
+const removeCoordinateHack = () => {
+  const restoreForProto = (Proto, name) => {
+    if (!Proto || !Proto.prototype || !originalDescriptors[name]) return;
+    const desc = originalDescriptors[name];
+    if (desc.clientX) Object.defineProperty(Proto.prototype, 'clientX', desc.clientX);
+    if (desc.clientY) Object.defineProperty(Proto.prototype, 'clientY', desc.clientY);
+    if (desc.pageX) Object.defineProperty(Proto.prototype, 'pageX', desc.pageX);
+    if (desc.pageY) Object.defineProperty(Proto.prototype, 'pageY', desc.pageY);
+  };
+
+  if (typeof Touch !== 'undefined') restoreForProto(Touch, 'Touch');
+  if (typeof MouseEvent !== 'undefined') restoreForProto(MouseEvent, 'MouseEvent');
+  if (typeof PointerEvent !== 'undefined') restoreForProto(PointerEvent, 'PointerEvent');
+  
+  originalDescriptors = {};
+};
 
 const goldenQuotes = [
   "Preserving your golden moments for a lifetime.",
@@ -69,9 +95,13 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
   const stateRef = useRef({ scale, pan, pageWidth: 300, pageHeight: 400, availW: window.innerWidth, availH: window.innerHeight });
 
   useEffect(() => {
+    applyCoordinateHack();
     const updateSize = () => setScreenSize({ w: window.innerWidth, h: window.innerHeight });
     window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+    return () => {
+      window.removeEventListener('resize', updateSize);
+      removeCoordinateHack();
+    };
   }, []);
 
   const toggleFullscreen = () => {
@@ -324,19 +354,6 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           <ArrowLeft size={16} /> Back
         </button>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.2rem', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{decodeURIComponent(fileId).replace('.pdf', '')}</h2>
-          {pages.length > 0 && (
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', marginTop: '4px', fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
-              {currentPage === 0
-                ? 'Front Cover'
-                : currentPage >= pages.length - 2
-                  ? 'Back Cover'
-                  : `Pages ${currentPage + 1}-${currentPage + 2} of ${pages.length}`}
-            </span>
-          )}
-        </div>
-
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'rgba(255,255,255,0.9)', color: '#333', border: 'none', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: '500' }} onClick={() => setShowFeedback(true)}>
             <MessageSquare size={18} /> Request Changes
@@ -351,89 +368,95 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
       </div>
 
       {/* Painted Album Name at the Top */}
-      <div style={{
-        position: 'absolute',
-        top: '80px',
-        left: 0, right: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        alignItems: 'center',
-        pointerEvents: 'none',
-        zIndex: 2, // underneath the flipbook container which is zIndex 5
-        opacity: 0.8,
-      }}>
-        <span style={{
-          fontFamily: "'Breathing', cursive",
-          fontSize: isPortraitLayout ? '2.5rem' : '4.5rem',
-          color: '#ffffff',
-          mixBlendMode: 'overlay',
-          textTransform: 'capitalize',
-          marginBottom: '5px',
-          textShadow: '0 4px 12px rgba(0,0,0,0.4)'
+      {!isPortraitLayout && (
+        <div style={{
+          position: 'absolute',
+          top: '65px',
+          left: 0, right: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          pointerEvents: 'none',
+          zIndex: 6, // Above flipbook background
+          opacity: 0.85,
         }}>
-          {decodeURIComponent(fileId).replace('.pdf', '')}
-        </span>
-        <span style={{
-          fontFamily: "'Inter', sans-serif",
-          fontSize: isPortraitLayout ? '0.8rem' : '1.1rem',
-          color: '#ffffff',
-          mixBlendMode: 'overlay',
-          fontWeight: 300,
-          letterSpacing: '2px',
-          textAlign: 'center',
-          padding: '0 20px',
-          textShadow: '0 2px 8px rgba(0,0,0,0.4)'
-        }}>
-          {randomQuote}
-        </span>
-      </div>
+          <span style={{
+            fontFamily: "'Breathing', cursive",
+            fontSize: 'clamp(2.2rem, 3.8vw, 3.2rem)',
+            color: '#ffffff',
+            mixBlendMode: 'overlay',
+            textTransform: 'capitalize',
+            marginBottom: '0px',
+            textShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            lineHeight: 1.1
+          }}>
+            {decodeURIComponent(fileId).replace('.pdf', '')}
+          </span>
+          <span style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: 'clamp(0.8rem, 1.1vw, 0.95rem)',
+            color: '#ffffff',
+            mixBlendMode: 'overlay',
+            fontWeight: 300,
+            letterSpacing: '1.5px',
+            textAlign: 'center',
+            padding: '0 20px',
+            marginTop: '2px',
+            textShadow: '0 2px 8px rgba(0,0,0,0.4)'
+          }}>
+            {randomQuote}
+          </span>
+        </div>
+      )}
 
       {/* Painted Thank You Text directly on the wood background for proper blending */}
-      <div style={{
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        pointerEvents: 'none',
-        opacity: (pages.length > 0 && currentPage >= pages.length - 2 && bookState === 'read') ? 0.9 : 0,
-        transition: 'opacity 1.5s ease 0.3s',
-        zIndex: 2 // underneath the flipbook container which is zIndex 5
-      }}>
-        {/* We recreate the scale/pan transform so it aligns with the book */}
+      {!isPortraitLayout && (
         <div style={{
-          width: '100%',
-          height: '100%',
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          transform: `scale(${scale}) translate(${pan.x / scale}px, ${pan.y / scale}px)`,
-          transition: isDragging ? 'none' : 'transform 0.3s ease'
+          pointerEvents: 'none',
+          opacity: (pages.length > 0 && currentPage >= pages.length - 2 && bookState === 'read') ? 0.9 : 0,
+          transition: 'opacity 1.5s ease 0.3s',
+          zIndex: 2 // underneath the flipbook container which is zIndex 5
         }}>
-          {/* Positioned exactly in the right half of the book area */}
+          {/* We recreate the scale/pan transform so it aligns with the book */}
           <div style={{
-            position: 'absolute',
-            left: '50%',
-            top: '50%',
-            transform: 'translate(0, -50%)',
-            width: `${pageWidth * 2}px`,
-            height: `${pageHeight}px`,
+            width: '100%',
+            height: '100%',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            paddingRight: '15%'
+            transform: `scale(${scale}) translate(${pan.x / scale}px, ${pan.y / scale}px)`,
+            transition: isDragging ? 'none' : 'transform 0.3s ease'
           }}>
-            <span style={{
-              fontFamily: "'Breathing', cursive",
-              fontSize: isPortraitLayout ? '2.5rem' : '8rem',
-              color: '#ffffff',
-              mixBlendMode: 'overlay',
-              transform: 'rotate(-5deg)'
-            }}>Thank You</span>
+            {/* Positioned exactly in the right half of the book area */}
+            <div style={{
+              position: 'absolute',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(0, -50%)',
+              width: `${pageWidth * 2}px`,
+              height: `${pageHeight}px`,
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              paddingRight: '15%'
+            }}>
+              <span style={{
+                fontFamily: "'Breathing', cursive",
+                fontSize: '8rem',
+                color: '#ffffff',
+                mixBlendMode: 'overlay',
+                transform: 'rotate(-5deg)'
+              }}>Thank You</span>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div 
         ref={flipbookWrapperRef}

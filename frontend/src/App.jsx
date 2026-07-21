@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Viewer from './pages/Viewer';
+import VideoPlayerPage from './pages/VideoPlayerPage';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -21,6 +22,10 @@ function App() {
           <Route 
             path="/viewer/:fileId" 
             element={session ? <Viewer session={session} /> : <Navigate to="/login" replace />} 
+          />
+          <Route 
+            path="/video/:fileId" 
+            element={session ? <VideoPlayerPage session={session} /> : <Navigate to="/login" replace />} 
           />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>

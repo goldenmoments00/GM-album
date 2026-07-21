@@ -28,7 +28,6 @@
 }
 
 html, body {
-  overflow: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -43,7 +42,6 @@ body {
   background-color: var(--color-grey-soft);
   color: var(--color-text-matte);
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior: none;
 }
 
 h1,
