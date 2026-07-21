@@ -19,12 +19,16 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Password is required' });
     }
 
+    console.log(`[Login Request] Attempting login with password/folder: "${password}"`);
     // Treat the password as the folder name
     const folderId = await driveService.findFolderByName(password);
     
     if (!folderId) {
+      console.warn(`[Login Failed] Folder ID not found for password: "${password}"`);
       return res.status(401).json({ error: 'Invalid Album Password' });
     }
+
+    console.log(`[Login Success] Found folder ID "${folderId}" for password "${password}"`);
 
     // Fetch the album PDFs directly from the folder
     const albums = await driveService.getAlbumsInFolder(folderId);
