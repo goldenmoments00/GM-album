@@ -3,20 +3,38 @@ const path = require('path');
 const { google } = require('googleapis');
 const dotenv = require('dotenv');
 
-// Force reload backend/.env variables directly from file
-const envPath = path.join(__dirname, '../.env');
-if (fs.existsSync(envPath)) {
-  const envConfig = dotenv.parse(fs.readFileSync(envPath));
-  for (const k in envConfig) {
-    process.env[k] = envConfig[k];
+// Force reload .env variables directly from all possible file locations
+const possibleEnvPaths = [
+  path.join(__dirname, '../.env'),
+  path.join(__dirname, '../../.env'),
+  path.join(process.cwd(), 'backend/.env'),
+  path.join(process.cwd(), '.env')
+];
+
+for (const p of possibleEnvPaths) {
+  if (fs.existsSync(p)) {
+    try {
+      const envConfig = dotenv.parse(fs.readFileSync(p));
+      for (const k in envConfig) {
+        if (envConfig[k]) {
+          process.env[k] = envConfig[k];
+        }
+      }
+    } catch (e) {}
   }
 }
 
-// Resolve relative GOOGLE_APPLICATION_CREDENTIALS path relative to backend directory
-if (process.env.GOOGLE_APPLICATION_CREDENTIALS && !path.isAbsolute(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
-  const resolvedKeyPath = path.resolve(__dirname, '../', process.env.GOOGLE_APPLICATION_CREDENTIALS);
-  if (fs.existsSync(resolvedKeyPath)) {
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = resolvedKeyPath;
+// Resolve service-account.json key path
+const possibleKeyPaths = [
+  path.join(__dirname, '../service-account.json'),
+  path.join(process.cwd(), 'backend/service-account.json'),
+  path.join(process.cwd(), 'service-account.json')
+];
+
+for (const kp of possibleKeyPaths) {
+  if (fs.existsSync(kp)) {
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = kp;
+    break;
   }
 }
 
