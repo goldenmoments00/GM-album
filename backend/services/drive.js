@@ -52,42 +52,62 @@ async function findFolderByName(folderName) {
   }
 
   const rootFolderId = process.env.DRIVE_ROOT_FOLDER_ID;
-  const exactQuery = `name = '${cleanName}' and mimeType = 'application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed = false`;
   
   try {
-    // First try exact query
-    const res = await driveApi.files.list({
-      q: exactQuery,
+    // 1. If rootFolderId is set, search inside parents first
+    if (rootFolderId) {
+      const exactQuery = `name = '${cleanName}' and mimeType = 'application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed = false`;
+      const res = await driveApi.files.list({
+        q: exactQuery,
+        fields: 'files(id, name)',
+        spaces: 'drive',
+      });
+
+      if (res.data.files && res.data.files.length > 0) {
+        console.log(`[GoogleDrive] Found folder "${cleanName}" in root parent:`, res.data.files[0].id);
+        return res.data.files[0].id;
+      }
+    }
+
+    // 2. Global search fallback across all shared/accessible folders
+    const globalQuery = `name = '${cleanName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    const globalRes = await driveApi.files.list({
+      q: globalQuery,
       fields: 'files(id, name)',
       spaces: 'drive',
     });
 
-    if (res.data.files.length > 0) {
-      return res.data.files[0].id;
+    if (globalRes.data.files && globalRes.data.files.length > 0) {
+      console.log(`[GoogleDrive] Found folder "${cleanName}" via global search:`, globalRes.data.files[0].id);
+      return globalRes.data.files[0].id;
     }
 
-    // Fallback: List all folders in parent and match case-insensitively
-    const allQuery = `mimeType = 'application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed = false`;
+    // 3. Global case-insensitive search fallback
+    const listAllQuery = `mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
     const allRes = await driveApi.files.list({
-      q: allQuery,
+      q: listAllQuery,
       fields: 'files(id, name)',
       spaces: 'drive',
       pageSize: 100
     });
 
-    const matchedFolder = allRes.data.files.find(f => 
-      f.name.toLowerCase() === cleanName.toLowerCase() ||
-      f.name.toLowerCase().startsWith(cleanName.toLowerCase() + " ") ||
-      f.name.toLowerCase().startsWith(cleanName.toLowerCase() + "-")
-    );
+    if (allRes.data.files) {
+      const matchedFolder = allRes.data.files.find(f => 
+        f.name.toLowerCase() === cleanName.toLowerCase() ||
+        f.name.toLowerCase().startsWith(cleanName.toLowerCase() + " ") ||
+        f.name.toLowerCase().startsWith(cleanName.toLowerCase() + "-")
+      );
 
-    if (matchedFolder) {
-      return matchedFolder.id;
+      if (matchedFolder) {
+        console.log(`[GoogleDrive] Found folder "${cleanName}" via case-insensitive search:`, matchedFolder.id);
+        return matchedFolder.id;
+      }
     }
 
+    console.warn(`[GoogleDrive] No folder found matching "${cleanName}"`);
     return null;
   } catch (error) {
-    console.error('Error finding folder:', error);
+    console.error('Error finding Google Drive folder:', error.message || error);
     throw new Error('Failed to search Google Drive');
   }
 }
