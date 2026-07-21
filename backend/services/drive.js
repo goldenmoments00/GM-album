@@ -25,20 +25,32 @@ if (!useMock) {
  * @returns {string|null} - The folder ID or null if not found
  */
 async function findFolderByName(folderName) {
+  const cleanName = folderName.trim();
+  
   if (useMock) {
-    const folderPath = path.join(MOCK_DRIVE_PATH, folderName);
-    if (fs.existsSync(folderPath) && fs.statSync(folderPath).isDirectory()) {
-      return folderName; // In mock, folder ID is just the name
+    if (fs.existsSync(MOCK_DRIVE_PATH)) {
+      const items = fs.readdirSync(MOCK_DRIVE_PATH);
+      const match = items.find(item => 
+        item.toLowerCase() === cleanName.toLowerCase() ||
+        item.toLowerCase().startsWith(cleanName.toLowerCase() + " ")
+      );
+      if (match) {
+        const folderPath = path.join(MOCK_DRIVE_PATH, match);
+        if (fs.statSync(folderPath).isDirectory()) {
+          return match;
+        }
+      }
     }
     return null;
   }
 
   const rootFolderId = process.env.DRIVE_ROOT_FOLDER_ID;
-  const query = `name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed = false`;
+  const exactQuery = `name = '${cleanName}' and mimeType = 'application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed = false`;
   
   try {
+    // First try exact query
     const res = await driveApi.files.list({
-      q: query,
+      q: exactQuery,
       fields: 'files(id, name)',
       spaces: 'drive',
     });
@@ -46,6 +58,26 @@ async function findFolderByName(folderName) {
     if (res.data.files.length > 0) {
       return res.data.files[0].id;
     }
+
+    // Fallback: List all folders in parent and match case-insensitively
+    const allQuery = `mimeType = 'application/vnd.google-apps.folder' and '${rootFolderId}' in parents and trashed = false`;
+    const allRes = await driveApi.files.list({
+      q: allQuery,
+      fields: 'files(id, name)',
+      spaces: 'drive',
+      pageSize: 100
+    });
+
+    const matchedFolder = allRes.data.files.find(f => 
+      f.name.toLowerCase() === cleanName.toLowerCase() ||
+      f.name.toLowerCase().startsWith(cleanName.toLowerCase() + " ") ||
+      f.name.toLowerCase().startsWith(cleanName.toLowerCase() + "-")
+    );
+
+    if (matchedFolder) {
+      return matchedFolder.id;
+    }
+
     return null;
   } catch (error) {
     console.error('Error finding folder:', error);
