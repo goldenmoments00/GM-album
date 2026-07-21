@@ -39,39 +39,37 @@ for (const kp of possibleKeyPaths) {
   }
 }
 
-console.log('[GoogleDrive Init] Credentials file resolved:', process.env.GOOGLE_APPLICATION_CREDENTIALS);
-console.log('[GoogleDrive Init] Root folder ID resolved:', process.env.DRIVE_ROOT_FOLDER_ID);
-
-// Helper to determine if we should use the mock drive for local testing
-const useMock = (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) && 
-                !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
-                !process.env.GOOGLE_CREDENTIALS_JSON;
-const MOCK_DRIVE_PATH = path.join(__dirname, '../../mock_drive');
+// Force Drive API initialization and completely remove mock fallback
+const useMock = false;
+const MOCK_DRIVE_PATH = '';
 
 let driveApi = null;
+let authOptions = {
+  scopes: ['https://www.googleapis.com/auth/drive.readonly'],
+};
 
-if (!useMock) {
-  // Initialize Google Drive API
-  let authOptions = {
-    scopes: ['https://www.googleapis.com/auth/drive.readonly'],
-  };
-
-  if (process.env.GOOGLE_CREDENTIALS_JSON) {
-    try {
-      authOptions.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
-      console.log('[GoogleDrive Init] Using GOOGLE_CREDENTIALS_JSON string');
-    } catch (e) {
-      console.error('[GoogleDrive Init] Failed to parse GOOGLE_CREDENTIALS_JSON');
-    }
-  } else {
-    authOptions.keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    console.log('[GoogleDrive Init] Using keyFile path:', authOptions.keyFile);
+if (process.env.GOOGLE_CREDENTIALS_JSON) {
+  try {
+    authOptions.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+    console.log('[GoogleDrive Init] Using GOOGLE_CREDENTIALS_JSON string');
+  } catch (e) {
+    console.error('[GoogleDrive Init] Failed to parse GOOGLE_CREDENTIALS_JSON');
   }
-
-  const auth = new google.auth.GoogleAuth(authOptions);
-  
-  driveApi = google.drive({ version: 'v3', auth });
+} else {
+  authOptions.keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+  console.log('[GoogleDrive Init] Using keyFile path:', authOptions.keyFile);
 }
+
+const auth = new google.auth.GoogleAuth(authOptions);
+driveApi = google.drive({ version: 'v3', auth });
+
+const getDriveRoot = () => {
+  const root = process.env.DRIVE_ROOT_FOLDER_ID;
+  if (!root) {
+    console.error('[GoogleDrive Error] DRIVE_ROOT_FOLDER_ID is missing or undefined!');
+  }
+  return root;
+};
 
 /**
  * Searches for a folder in Google Drive by its name (Album Password)
