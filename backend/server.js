@@ -22,7 +22,12 @@ app.use(express.json());
 
 app.use('/api', apiRoutes);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-  console.log(`Backend fully reloaded! Root ID:`, process.env.DRIVE_ROOT_FOLDER_ID);
-});
+// Only listen locally, Vercel will use the exported app directly
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+    console.log(`Backend fully reloaded! Root ID:`, process.env.DRIVE_ROOT_FOLDER_ID);
+  });
+}
+
+module.exports = app;
