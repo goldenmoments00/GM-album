@@ -35,6 +35,16 @@ const overrideEventCoord = (Proto) => {
 overrideEventCoord(window.MouseEvent);
 overrideEventCoord(window.PointerEvent);
 
+const goldenQuotes = [
+  "Preserving your golden moments for a lifetime.",
+  "Every picture tells the story of a golden moment.",
+  "Capturing the golden moments of today for the memories of tomorrow.",
+  "Your life is made of golden moments. Here are a few.",
+  "Reliving the golden moments that make life beautiful.",
+  "Where every memory is a golden moment.",
+  "Golden moments, frozen in time."
+];
+
 export default function DesktopViewer({ pages, dimensions, session, fileId }) {
   const navigate = useNavigate();
   const [showFeedback, setShowFeedback] = useState(false);
@@ -46,6 +56,7 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
   const [screenSize, setScreenSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [immersiveMode, setImmersiveMode] = useState(false);
   const [showAnnotationEditor, setShowAnnotationEditor] = useState(false);
+  const [randomQuote] = useState(() => goldenQuotes[Math.floor(Math.random() * goldenQuotes.length)]);
   
   const bookRef = useRef();
   const flipbookWrapperRef = useRef(null);
@@ -223,8 +234,10 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
   let pageWidth = 300;
   let pageHeight = 400;
 
-  if (dimensions.baseWidth && dimensions.baseHeight) {
-    const bookRatio = (dimensions.baseWidth * 2) / dimensions.baseHeight;
+  if ((dimensions.baseWidth && dimensions.baseHeight) || (dimensions.width && dimensions.height)) {
+    const w = dimensions.baseWidth || dimensions.width;
+    const h = dimensions.baseHeight || dimensions.height;
+    const bookRatio = (w * 2) / h;
     const screenRatio = availW / availH;
 
     if (bookRatio > screenRatio) {
@@ -295,27 +308,26 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
       <div className="viewer-toolbar" style={{
         position: 'absolute',
         top: 0, left: 0, right: 0,
-        height: '60px',
-        backgroundColor: 'rgba(255,255,255,0.95)',
+        height: '70px',
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 20px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.05)',
         zIndex: 10,
         transition: 'transform 0.3s ease, opacity 0.3s ease',
         transform: immersiveMode ? 'translateY(-100%)' : 'translateY(0)',
         opacity: immersiveMode ? 0 : 1,
         pointerEvents: immersiveMode ? 'none' : 'auto'
       }}>
-        <button className="btn-outline" style={{ padding: '8px 16px', display: 'flex', gap: '8px', alignItems: 'center' }} onClick={() => navigate('/dashboard')}>
+        <button className="btn-outline" style={{ padding: '8px 16px', display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(8px)', borderRadius: '20px' }} onClick={() => navigate('/dashboard')}>
           <ArrowLeft size={16} /> Back
         </button>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1.2rem' }}>{decodeURIComponent(fileId).replace('.pdf', '')}</h2>
+          <h2 style={{ fontSize: '1.2rem', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>{decodeURIComponent(fileId).replace('.pdf', '')}</h2>
           {pages.length > 0 && (
-            <span style={{ fontSize: '0.8rem', color: 'var(--color-grey-dark)', marginTop: '4px', fontWeight: '500' }}>
+            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.8)', marginTop: '4px', fontWeight: '500', textShadow: '0 1px 2px rgba(0,0,0,0.5)' }}>
               {currentPage === 0
                 ? 'Front Cover'
                 : currentPage >= pages.length - 2
@@ -326,16 +338,55 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
         </div>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'white', padding: '8px 16px' }} onClick={() => setShowFeedback(true)}>
+          <button style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'rgba(255,255,255,0.9)', color: '#333', border: 'none', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: '500' }} onClick={() => setShowFeedback(true)}>
             <MessageSquare size={18} /> Request Changes
           </button>
-          <button className="btn-gold" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px' }} onClick={handleApprove}>
+          <button className="btn-gold" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', border: 'none' }} onClick={handleApprove}>
             <Check size={18} /> Approve Album
           </button>
-          <button className="btn-outline" style={{ padding: '8px' }} onClick={toggleFullscreen} title="Toggle Fullscreen">
+          <button style={{ padding: '8px', color: '#fff', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={toggleFullscreen} title="Toggle Fullscreen">
             <Maximize size={18} />
           </button>
         </div>
+      </div>
+
+      {/* Painted Album Name at the Top */}
+      <div style={{
+        position: 'absolute',
+        top: '80px',
+        left: 0, right: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        pointerEvents: 'none',
+        zIndex: 2, // underneath the flipbook container which is zIndex 5
+        opacity: 0.8,
+      }}>
+        <span style={{
+          fontFamily: "'Breathing', cursive",
+          fontSize: isPortraitLayout ? '2.5rem' : '4.5rem',
+          color: '#ffffff',
+          mixBlendMode: 'overlay',
+          textTransform: 'capitalize',
+          marginBottom: '5px',
+          textShadow: '0 4px 12px rgba(0,0,0,0.4)'
+        }}>
+          {decodeURIComponent(fileId).replace('.pdf', '')}
+        </span>
+        <span style={{
+          fontFamily: "'Inter', sans-serif",
+          fontSize: isPortraitLayout ? '0.8rem' : '1.1rem',
+          color: '#ffffff',
+          mixBlendMode: 'overlay',
+          fontWeight: 300,
+          letterSpacing: '2px',
+          textAlign: 'center',
+          padding: '0 20px',
+          textShadow: '0 2px 8px rgba(0,0,0,0.4)'
+        }}>
+          {randomQuote}
+        </span>
       </div>
 
       {/* Painted Thank You Text directly on the wood background for proper blending */}
