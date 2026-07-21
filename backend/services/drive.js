@@ -1,6 +1,16 @@
 const fs = require('fs');
 const path = require('path');
 const { google } = require('googleapis');
+const dotenv = require('dotenv');
+
+// Force reload backend/.env variables directly from file
+const envPath = path.join(__dirname, '../.env');
+if (fs.existsSync(envPath)) {
+  const envConfig = dotenv.parse(fs.readFileSync(envPath));
+  for (const k in envConfig) {
+    process.env[k] = envConfig[k];
+  }
+}
 
 // Resolve relative GOOGLE_APPLICATION_CREDENTIALS path relative to backend directory
 if (process.env.GOOGLE_APPLICATION_CREDENTIALS && !path.isAbsolute(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
@@ -9,6 +19,9 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS && !path.isAbsolute(process.env.G
     process.env.GOOGLE_APPLICATION_CREDENTIALS = resolvedKeyPath;
   }
 }
+
+console.log('[GoogleDrive Init] Credentials file resolved:', process.env.GOOGLE_APPLICATION_CREDENTIALS);
+console.log('[GoogleDrive Init] Root folder ID resolved:', process.env.DRIVE_ROOT_FOLDER_ID);
 
 // Helper to determine if we should use the mock drive for local testing
 const useMock = (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) && !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
