@@ -2,8 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const { google } = require('googleapis');
 const dotenv = require('dotenv');
-
-// Force reload .env variables directly from all possible file locations
 const possibleEnvPaths = [
   path.join(__dirname, '../.env'),
   path.join(__dirname, '../../.env'),
@@ -13,6 +11,7 @@ const possibleEnvPaths = [
 
 for (const p of possibleEnvPaths) {
   if (fs.existsSync(p)) {
+    console.log('[GoogleDrive Init] Found .env at:', p);
     try {
       const envConfig = dotenv.parse(fs.readFileSync(p));
       for (const k in envConfig) {
@@ -20,7 +19,9 @@ for (const p of possibleEnvPaths) {
           process.env[k] = envConfig[k];
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error('[GoogleDrive Init] Error parsing env file at', p, e);
+    }
   }
 }
 
@@ -42,17 +43,32 @@ console.log('[GoogleDrive Init] Credentials file resolved:', process.env.GOOGLE_
 console.log('[GoogleDrive Init] Root folder ID resolved:', process.env.DRIVE_ROOT_FOLDER_ID);
 
 // Helper to determine if we should use the mock drive for local testing
-const useMock = (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) && !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const useMock = (!process.env.GOOGLE_APPLICATION_CREDENTIALS || !fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) && 
+                !process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL &&
+                !process.env.GOOGLE_CREDENTIALS_JSON;
 const MOCK_DRIVE_PATH = path.join(__dirname, '../../mock_drive');
 
 let driveApi = null;
 
 if (!useMock) {
   // Initialize Google Drive API
-  const auth = new google.auth.GoogleAuth({
-    keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  let authOptions = {
     scopes: ['https://www.googleapis.com/auth/drive.readonly'],
-  });
+  };
+
+  if (process.env.GOOGLE_CREDENTIALS_JSON) {
+    try {
+      authOptions.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
+      console.log('[GoogleDrive Init] Using GOOGLE_CREDENTIALS_JSON string');
+    } catch (e) {
+      console.error('[GoogleDrive Init] Failed to parse GOOGLE_CREDENTIALS_JSON');
+    }
+  } else {
+    authOptions.keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    console.log('[GoogleDrive Init] Using keyFile path:', authOptions.keyFile);
+  }
+
+  const auth = new google.auth.GoogleAuth(authOptions);
   
   driveApi = google.drive({ version: 'v3', auth });
 }
