@@ -201,6 +201,7 @@ export default function MobileViewer({ pages, session, fileId }) {
           onClose={() => setShowFeedback(false)}
           totalPages={mobilePages.length}
           folderId={session.folderId}
+          albumId={session.albumId}
           fileId={fileId}
         />
       )}

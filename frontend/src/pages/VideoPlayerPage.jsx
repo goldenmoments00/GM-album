@@ -6,7 +6,7 @@ import { ArrowLeft, Send, Check, AlertCircle, Trash2, Mic, Square, Play } from '
 export default function VideoPlayerPage({ session }) {
   const { fileId } = useParams();
   const navigate = useNavigate();
-  const { folderId } = session;
+  const { folderId, albumId } = session;
   
   const videoRef = useRef(null);
   const [videoData, setVideoData] = useState({ comments: [], status: 'Waiting for Review' });
@@ -206,7 +206,7 @@ export default function VideoPlayerPage({ session }) {
     if (videoData.comments.length === 0) return;
     
     const cleanFileId = fileId.replace(/\.[^/.]+$/, '');
-    const text = `Review has been placed for Project: ${folderId} - File: ${cleanFileId}. Kindly check.`;
+    const text = `Review has been placed for Project: ${albumId || folderId} - File: ${cleanFileId}. Kindly check.`;
     
     if (isMobile) {
       const url = `https://wa.me/916009426410?text=${encodeURIComponent(text)}`;

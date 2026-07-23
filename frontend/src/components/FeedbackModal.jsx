@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { X, Send } from 'lucide-react';
 import html2canvas from 'html2canvas';
 
-export default function FeedbackModal({ onClose, totalPages, folderId, fileId }) {
+export default function FeedbackModal({ onClose, totalPages, folderId, albumId, fileId }) {
   const [pages, setPages] = useState('');
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -33,7 +33,7 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
       });
 
       const cleanFileId = fileId.replace(/\.pdf$/i, '');
-      const text = `Review has been placed for Project: ${folderId} - File: ${cleanFileId}. Kindly check.`;
+      const text = `Review has been placed for Project: ${albumId || folderId} - File: ${cleanFileId}. Kindly check.`;
 
       if (isMobile) {
         // Hide modal temporarily for screenshot
