@@ -262,11 +262,15 @@ export default function Dashboard({ session }) {
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }} 
               >
-                <video 
-                  src={`/api/video/stream/${folderId}/${encodeURIComponent(video.file)}#t=0.5`} 
-                  preload="metadata" 
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                />
+                {video.thumbnail ? (
+                  <img 
+                    src={video.thumbnail} 
+                    alt={video.title}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                  />
+                ) : (
+                  <div style={{ width: '100%', height: '100%', backgroundColor: '#222' }} />
+                )}
                 <div style={{ 
                   position: 'absolute', 
                   top: 0, left: 0, right: 0, bottom: 0, 

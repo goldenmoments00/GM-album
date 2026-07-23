@@ -297,12 +297,13 @@ async function getVideosInFolder(folderId) {
     
     const res = await driveApi.files.list({
       q: query,
-      fields: 'files(id, name)',
+      fields: 'files(id, name, thumbnailLink)',
     });
 
     return res.data.files.map(file => ({
       title: file.name.replace(/\.[^/.]+$/, ''), // remove any extension
-      file: file.name
+      file: file.name,
+      thumbnail: file.thumbnailLink || null
     }));
   } catch (error) {
     console.error('Error getting videos:', error);
