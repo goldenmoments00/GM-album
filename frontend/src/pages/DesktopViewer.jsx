@@ -366,8 +366,8 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           >
             Review List
           </button>
-          <button className="btn-suggest-pulse" style={{ flex: 1, maxWidth: '200px', height: '44px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: '#ffffff', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', borderRadius: '9999px', cursor: 'pointer', fontWeight: '500', whiteSpace: 'nowrap', padding: '0 8px', fontSize: isPortraitLayout ? '0.75rem' : '0.9rem' }} onClick={() => setShowAnnotationEditor(true)}>
-            <MessageSquare size={16} fill="rgba(139, 21, 26, 0.1)" strokeWidth={2.5} /> Suggest Changes
+          <button style={{ flex: 1, maxWidth: '200px', height: '44px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: '#ffffff', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', borderRadius: '9999px', cursor: 'pointer', fontWeight: '500', whiteSpace: 'nowrap', padding: '0 8px', fontSize: isPortraitLayout ? '0.75rem' : '0.9rem' }} onClick={() => setShowAnnotationEditor(true)}>
+            <MessageSquare size={16} fill="var(--color-primary)" strokeWidth={2} /> Suggest Changes
           </button>
           <button className="btn-primary" style={{ flex: 1, maxWidth: '200px', height: '44px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '5px', borderRadius: '9999px', border: 'none', cursor: 'pointer', fontWeight: '500', whiteSpace: 'nowrap', padding: '0 8px', fontSize: isPortraitLayout ? '0.75rem' : '0.9rem' }} onClick={handleApprove}>
             <Check size={16} /> APPROVE ALBUM
