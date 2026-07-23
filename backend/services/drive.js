@@ -33,19 +33,39 @@ try {
   const credentialsPath = path.join(__dirname, '../credentials.json');
   const tokenPath = path.join(__dirname, '../token.json');
 
-  if (fs.existsSync(credentialsPath) && fs.existsSync(tokenPath)) {
-    console.log('[GoogleDrive Init] Loading OAuth2 credentials from', credentialsPath);
-    const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
-    const { client_secret, client_id, redirect_uris } = credentials.installed;
-    const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+  let credentials = null;
+  let token = null;
+
+  // 1. Load Credentials (either from ENV or File)
+  if (process.env.GOOGLE_DRIVE_CREDENTIALS) {
+    console.log('[GoogleDrive Init] Loading credentials from Environment Variable');
+    credentials = JSON.parse(process.env.GOOGLE_DRIVE_CREDENTIALS);
+  } else if (fs.existsSync(credentialsPath)) {
+    console.log('[GoogleDrive Init] Loading credentials from', credentialsPath);
+    credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+  }
+
+  // 2. Load Token (either from ENV or File)
+  if (process.env.GOOGLE_DRIVE_TOKEN) {
+    console.log('[GoogleDrive Init] Loading token from Environment Variable');
+    token = JSON.parse(process.env.GOOGLE_DRIVE_TOKEN);
+  } else if (fs.existsSync(tokenPath)) {
+    console.log('[GoogleDrive Init] Loading token from', tokenPath);
+    token = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+  }
+
+  if (credentials && token) {
+    const { client_secret, client_id, redirect_uris } = credentials.installed || credentials.web || credentials;
+    const redirectUri = (redirect_uris && redirect_uris.length > 0) ? redirect_uris[0] : 'urn:ietf:wg:oauth:2.0:oob';
     
-    const token = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+    const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirectUri);
     oAuth2Client.setCredentials(token);
+    
     auth = oAuth2Client;
     driveApi = google.drive({ version: 'v3', auth });
     console.log('[GoogleDrive Init] OAuth2 Client successfully initialized!');
   } else {
-    console.error('[GoogleDrive Init] ERROR: credentials.json or token.json is missing in backend directory.');
+    console.error('[GoogleDrive Init] ERROR: Missing Google Drive Credentials or Token. Please set GOOGLE_DRIVE_CREDENTIALS and GOOGLE_DRIVE_TOKEN environment variables, or ensure credentials.json and token.json exist.');
   }
 } catch (err) {
   console.error('[GoogleDrive Init] Failed to initialize OAuth2 client:', err);
