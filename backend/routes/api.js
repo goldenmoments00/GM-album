@@ -154,12 +154,29 @@ router.get('/video/data/:id/:file', async (req, res) => {
 /**
  * POST /api/video/comment
  */
-router.post('/video/comment', async (req, res) => {
+router.post('/video/comment', upload.fields([{ name: 'voice' }]), async (req, res) => {
   try {
     const { folderId, fileId, timestamp, commentText } = req.body;
-    const comments = await dbService.addVideoComment(folderId, fileId, timestamp, commentText);
+    
+    let voiceFileId = null;
+    let voiceUrl = null;
+
+    if (req.files && req.files['voice']) {
+      const voiceBuffer = req.files['voice'][0].buffer;
+      const voiceMimeType = req.files['voice'][0].mimetype || 'audio/mp4';
+      let extension = 'mp4';
+      if (req.files['voice'][0].originalname) {
+         extension = req.files['voice'][0].originalname.split('.').pop();
+      }
+      const uploadedVoice = await driveService.uploadVideoVoiceNote(folderId, voiceBuffer, voiceMimeType, extension);
+      voiceFileId = uploadedVoice.id;
+      voiceUrl = uploadedVoice.webViewLink;
+    }
+
+    const comments = await dbService.addVideoComment(folderId, fileId, parseFloat(timestamp), commentText, voiceFileId, voiceUrl);
     res.json({ success: true, comments });
   } catch (err) {
+    console.error('Failed to add comment:', err);
     res.status(500).json({ error: 'Failed to add comment' });
   }
 });
@@ -204,10 +221,20 @@ router.post('/reviews/upload', upload.fields([{ name: 'screenshot' }, { name: 'v
     const { folderId: reviewFolderId, reviewNumber } = await driveService.createNewReviewFolder(reviewsFolderId);
     
     // 3. Upload assets
-    const screenshotBuffer = req.files && req.files['screenshot'] ? req.files['screenshot'][0].buffer : null;
-    const voiceBuffer = req.files && req.files['voice'] ? req.files['voice'][0].buffer : null;
+    const screenshotFile = req.files && req.files['screenshot'] ? req.files['screenshot'][0] : null;
+    const voiceFile = req.files && req.files['voice'] ? req.files['voice'][0] : null;
     
-    const assets = await driveService.uploadReviewAssets(reviewFolderId, screenshotBuffer, voiceBuffer);
+    const screenshotBuffer = screenshotFile ? screenshotFile.buffer : null;
+    const voiceBuffer = voiceFile ? voiceFile.buffer : null;
+    
+    const options = {
+      screenshotMimeType: screenshotFile ? screenshotFile.mimetype : undefined,
+      screenshotName: screenshotFile ? screenshotFile.originalname : undefined,
+      voiceMimeType: voiceFile ? voiceFile.mimetype : undefined,
+      voiceName: voiceFile ? voiceFile.originalname : undefined,
+    };
+
+    const assets = await driveService.uploadReviewAssets(reviewFolderId, screenshotBuffer, voiceBuffer, options);
     
     // 4. Save metadata to Firestore
     const reviewData = {
@@ -259,6 +286,28 @@ router.post('/reviews/status', async (req, res) => {
   } catch (err) {
     console.error('Update Review Status Error:', err);
     res.status(500).json({ error: 'Failed to update review status' });
+  }
+});
+
+/**
+ * DELETE /api/reviews
+ */
+router.delete('/reviews', async (req, res) => {
+  try {
+    const { folderId, albumId, reviewIds } = req.body;
+    if (!Array.isArray(reviewIds)) {
+      return res.status(400).json({ error: 'reviewIds must be an array' });
+    }
+    
+    // Delete each review from the database
+    for (const reviewId of reviewIds) {
+      await dbService.deleteAlbumReview(folderId, albumId, reviewId);
+    }
+    
+    res.json({ success: true, deletedCount: reviewIds.length });
+  } catch (err) {
+    console.error('Delete Reviews Error:', err);
+    res.status(500).json({ error: 'Failed to delete reviews' });
   }
 });
 

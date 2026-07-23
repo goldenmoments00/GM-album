@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, Maximize2, Clock, CheckCircle, AlertCircle, Play, Square as StopSquare } from 'lucide-react';
+import { ChevronLeft, Maximize2, Clock, CheckCircle, AlertCircle, Play, Square as StopSquare, Trash2 } from 'lucide-react';
 
 export default function EditorView() {
   const { folderId, albumId } = useParams();
@@ -8,6 +8,8 @@ export default function EditorView() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedImage, setExpandedImage] = useState(null);
+  const [selectedReviews, setSelectedReviews] = useState(new Set());
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchReviews = async () => {
     try {
@@ -43,7 +45,54 @@ export default function EditorView() {
       });
     } catch (err) {
       console.error('Failed to update status:', err);
+      console.error('Failed to update status:', err);
       fetchReviews(); // Revert on failure
+    }
+  };
+
+  const toggleSelectReview = (reviewId) => {
+    const newSelected = new Set(selectedReviews);
+    if (newSelected.has(reviewId)) {
+      newSelected.delete(reviewId);
+    } else {
+      newSelected.add(reviewId);
+    }
+    setSelectedReviews(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedReviews.size === reviews.length && reviews.length > 0) {
+      setSelectedReviews(new Set());
+    } else {
+      setSelectedReviews(new Set(reviews.map(r => r.id)));
+    }
+  };
+
+  const deleteReviews = async (reviewIds) => {
+    if (!window.confirm(`Are you sure you want to delete ${reviewIds.length} review(s)? This cannot be undone.`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const cleanAlbumId = albumId.replace(/\.pdf$/i, '');
+      const response = await fetch('/api/reviews', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderId, albumId: cleanAlbumId, reviewIds })
+      });
+
+      if (response.ok) {
+        setReviews(prev => prev.filter(r => !reviewIds.includes(r.id)));
+        setSelectedReviews(new Set());
+      } else {
+        alert('Failed to delete reviews.');
+      }
+    } catch (err) {
+      console.error('Delete error:', err);
+      alert('Failed to delete reviews.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -74,16 +123,60 @@ export default function EditorView() {
             No reviews submitted for this album yet.
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
-            {reviews.map((review) => (
+          <>
+            {/* Bulk Actions Bar */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#1a1a1a', padding: '15px 20px', borderRadius: '12px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <input 
+                  type="checkbox" 
+                  checked={reviews.length > 0 && selectedReviews.size === reviews.length}
+                  onChange={toggleSelectAll}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                />
+                <span style={{ fontWeight: '500' }}>
+                  {selectedReviews.size > 0 ? `${selectedReviews.size} Selected` : 'Select All'}
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {selectedReviews.size > 0 && (
+                  <button 
+                    onClick={() => deleteReviews(Array.from(selectedReviews))}
+                    disabled={isDeleting}
+                    style={{ backgroundColor: '#ef4444', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}
+                  >
+                    <Trash2 size={16} /> Delete Selected
+                  </button>
+                )}
+                <button 
+                  onClick={() => deleteReviews(reviews.map(r => r.id))}
+                  disabled={isDeleting}
+                  style={{ backgroundColor: 'transparent', color: '#ef4444', border: '1px solid #ef4444', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}
+                >
+                  <Trash2 size={16} /> Delete All
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
+              {reviews.map((review) => (
               <div key={review.id} style={{ 
                 backgroundColor: '#1a1a1a', borderRadius: '12px', border: `1px solid ${getStatusColor(review.status)}55`,
-                overflow: 'hidden', display: 'flex', flexDirection: 'column'
+                overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                boxShadow: selectedReviews.has(review.id) ? '0 0 0 2px var(--color-primary)' : 'none',
+                transition: 'box-shadow 0.2s ease'
               }}>
                 {/* Header */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '15px', borderBottom: '1px solid #333', backgroundColor: '#222' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
-                    Page {review.pageNumber} <span style={{ color: '#888', fontSize: '0.9rem', marginLeft: '10px' }}>#{review.reviewNumber}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedReviews.has(review.id)}
+                      onChange={() => toggleSelectReview(review.id)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>
+                      Page {review.pageNumber} <span style={{ color: '#888', fontSize: '0.9rem', marginLeft: '5px' }}>#{review.reviewNumber}</span>
+                    </div>
                   </div>
                   
                   <select 
@@ -145,12 +238,12 @@ export default function EditorView() {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          </>
         )}
-
       </div>
 
-      {/* Fullscreen Image Modal */}
+      {/* Expanded Image Modal */}
       {expandedImage && (
         <div 
           onClick={() => setExpandedImage(null)}

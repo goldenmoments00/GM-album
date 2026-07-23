@@ -1,5 +1,5 @@
 const { db } = require('./firebase');
-const { doc, getDoc, setDoc, collection, getDocs } = require('firebase/firestore');
+const { doc, getDoc, setDoc, deleteDoc, collection, getDocs } = require('firebase/firestore');
 
 async function getVideoData(folderId, fileName) {
   if (!db) {
@@ -24,8 +24,11 @@ async function getVideoData(folderId, fileName) {
   }
 }
 
-async function addVideoComment(folderId, fileName, timestamp, commentText) {
-  if (!db) return [];
+async function addVideoComment(folderId, fileName, timestamp, commentText, googleDriveVoiceFileId = null, googleDriveVoiceUrl = null) {
+  if (!db) {
+    console.warn('[Firebase] Database not initialized');
+    return [];
+  }
   
   try {
     const docRef = doc(db, 'projects', folderId, 'videos', fileName);
@@ -37,6 +40,8 @@ async function addVideoComment(folderId, fileName, timestamp, commentText) {
       id: Date.now().toString(),
       timestamp,
       text: commentText,
+      googleDriveVoiceFileId,
+      googleDriveVoiceUrl,
       createdAt: new Date().toISOString()
     };
     
@@ -168,6 +173,19 @@ async function updateAlbumReviewStatus(folderId, albumId, reviewId, status) {
   }
 }
 
+async function deleteAlbumReview(folderId, albumId, reviewId) {
+  if (!db) return false;
+  
+  try {
+    const docRef = doc(db, 'projects', folderId, 'albums', albumId, 'reviews', reviewId);
+    await deleteDoc(docRef);
+    return true;
+  } catch (error) {
+    console.error('Error in deleteAlbumReview:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getVideoData,
   addVideoComment,
@@ -176,5 +194,6 @@ module.exports = {
   getProjectStatus,
   addAlbumReview,
   getAlbumReviews,
-  updateAlbumReviewStatus
+  updateAlbumReviewStatus,
+  deleteAlbumReview
 };

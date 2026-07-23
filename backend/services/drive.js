@@ -458,16 +458,16 @@ async function createNewReviewFolder(reviewsFolderId) {
   }
 }
 
-async function uploadReviewAssets(targetFolderId, screenshotBuffer, voiceBuffer) {
+async function uploadReviewAssets(targetFolderId, screenshotBuffer, voiceBuffer, options = {}) {
   try {
     let screenshotResult = null;
     if (screenshotBuffer) {
       const media = {
-        mimeType: 'image/png',
+        mimeType: options.screenshotMimeType || 'image/png',
         body: bufferToStream(screenshotBuffer)
       };
       const fileMetadata = {
-        name: 'screenshot.png',
+        name: options.screenshotName || 'screenshot.png',
         parents: [targetFolderId]
       };
       const file = await driveApi.files.create({
@@ -487,11 +487,11 @@ async function uploadReviewAssets(targetFolderId, screenshotBuffer, voiceBuffer)
     let voiceResult = null;
     if (voiceBuffer) {
       const media = {
-        mimeType: 'audio/webm', 
+        mimeType: options.voiceMimeType || 'audio/webm', 
         body: bufferToStream(voiceBuffer)
       };
       const fileMetadata = {
-        name: 'voice.webm',
+        name: options.voiceName || 'voice.webm',
         parents: [targetFolderId]
       };
       const file = await driveApi.files.create({
@@ -554,6 +554,59 @@ async function streamFileById(fileId, res, rangeHeader) {
   }
 }
 
+async function uploadVideoVoiceNote(projectFolderId, voiceBuffer, mimeType = 'audio/mp4', extension = 'mp4') {
+  try {
+    // Find or create 'Video Comments' folder in projectFolderId
+    const query = `name = 'Video Comments' and '${projectFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    const searchRes = await driveApi.files.list({ q: query, fields: 'files(id)' });
+    
+    let videoCommentsFolderId;
+    if (searchRes.data.files.length > 0) {
+      videoCommentsFolderId = searchRes.data.files[0].id;
+    } else {
+      const folderMetadata = {
+        name: 'Video Comments',
+        mimeType: 'application/vnd.google-apps.folder',
+        parents: [projectFolderId]
+      };
+      const folder = await driveApi.files.create({
+        resource: folderMetadata,
+        fields: 'id',
+        supportsAllDrives: true
+      });
+      videoCommentsFolderId = folder.data.id;
+    }
+
+    // Upload voice blob
+    const media = {
+      mimeType: mimeType,
+      body: bufferToStream(voiceBuffer)
+    };
+    const fileMetadata = {
+      name: `voice-${Date.now()}.${extension}`,
+      parents: [videoCommentsFolderId]
+    };
+    
+    const file = await driveApi.files.create({
+      resource: fileMetadata,
+      media: media,
+      fields: 'id, webViewLink',
+      supportsAllDrives: true
+    });
+
+    // Share publicly
+    await driveApi.permissions.create({
+      fileId: file.data.id,
+      resource: { role: 'reader', type: 'anyone' }
+    });
+
+    return file.data;
+  } catch (error) {
+    console.error('Error uploading video voice note:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   findFolderByName,
   getAlbumsInFolder,
@@ -563,5 +616,6 @@ module.exports = {
   findOrCreateReviewsFolder,
   createNewReviewFolder,
   uploadReviewAssets,
-  streamFileById
+  streamFileById,
+  uploadVideoVoiceNote
 };
