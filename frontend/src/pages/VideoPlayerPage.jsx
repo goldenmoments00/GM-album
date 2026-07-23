@@ -54,6 +54,9 @@ export default function VideoPlayerPage({ session }) {
         setVoiceBlob(audioBlob);
         setVoiceUrl(URL.createObjectURL(audioBlob));
         stream.getTracks().forEach(track => track.stop());
+        
+        // Auto-send the voice note
+        submitComment(newComment, audioBlob);
       };
       
       mediaRecorder.start();
@@ -93,9 +96,11 @@ export default function VideoPlayerPage({ session }) {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddComment = async (e) => {
-    e.preventDefault();
-    if ((!newComment.trim() && !voiceBlob) || isSubmitting) return;
+  const submitComment = async (textParam, blobParam) => {
+    const text = typeof textParam === 'string' ? textParam : newComment;
+    const blob = blobParam instanceof Blob ? blobParam : voiceBlob;
+
+    if ((!text.trim() && !blob) || isSubmitting) return;
 
     setIsSubmitting(true);
     const timeToSave = videoRef.current ? videoRef.current.currentTime : currentTimestamp;
@@ -104,13 +109,13 @@ export default function VideoPlayerPage({ session }) {
     formData.append('folderId', folderId);
     formData.append('fileId', fileId);
     formData.append('timestamp', timeToSave);
-    formData.append('commentText', newComment);
+    formData.append('commentText', text);
 
-    if (voiceBlob) {
-      const ext = voiceBlob.type.includes('mp4') ? 'mp4' : 
-                  voiceBlob.type.includes('webm') ? 'webm' : 
-                  voiceBlob.type.includes('ogg') ? 'ogg' : 'm4a';
-      formData.append('voice', voiceBlob, `voice.${ext}`);
+    if (blob) {
+      const ext = blob.type.includes('mp4') ? 'mp4' : 
+                  blob.type.includes('webm') ? 'webm' : 
+                  blob.type.includes('ogg') ? 'ogg' : 'm4a';
+      formData.append('voice', blob, `voice.${ext}`);
     }
 
     try {
@@ -139,6 +144,11 @@ export default function VideoPlayerPage({ session }) {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleAddComment = (e) => {
+    e.preventDefault();
+    submitComment();
   };
 
   const handleDeleteComment = async (commentId) => {
