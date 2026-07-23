@@ -14,25 +14,6 @@ export default function CustomVideoPlayer({ src, onPause, forwardedRef }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [isBuffering, setIsBuffering] = useState(true);
-  const [bufferPercent, setBufferPercent] = useState(0);
-  const [loadPercent, setLoadPercent] = useState(5);
-
-  useEffect(() => {
-    let interval;
-    if (isBuffering) {
-      interval = setInterval(() => {
-        setLoadPercent(prev => {
-          if (bufferPercent > prev) return bufferPercent;
-          if (prev < 90) return prev + Math.floor(Math.random() * 4 + 2);
-          if (prev < 98) return prev + 1;
-          return prev;
-        });
-      }, 150);
-    } else {
-      setLoadPercent(100);
-    }
-    return () => clearInterval(interval);
-  }, [isBuffering, bufferPercent]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -59,10 +40,7 @@ export default function CustomVideoPlayer({ src, onPause, forwardedRef }) {
 
     const handleProgress = () => {
       if (video.duration > 0 && video.buffered.length > 0) {
-        const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-        const pct = Math.min(100, Math.round((bufferedEnd / video.duration) * 100));
-        setBufferPercent(pct);
-        if (pct > 5 || video.readyState >= 3) {
+        if (video.readyState >= 3) {
           setIsBuffering(false);
         }
       }
@@ -77,7 +55,15 @@ export default function CustomVideoPlayer({ src, onPause, forwardedRef }) {
     video.addEventListener('playing', handlePlaying);
     video.addEventListener('progress', handleProgress);
 
+    // Failsafe: Check readyState periodically in case events are missed
+    const checkReady = setInterval(() => {
+      if (video.readyState >= 3) {
+        setIsBuffering(false);
+      }
+    }, 500);
+
     return () => {
+      clearInterval(checkReady);
       video.removeEventListener('timeupdate', handleTimeUpdate);
       video.removeEventListener('loadedmetadata', handleLoadedMetadata);
       video.removeEventListener('play', handlePlay);
@@ -166,31 +152,23 @@ export default function CustomVideoPlayer({ src, onPause, forwardedRef }) {
       {isBuffering && (
         <div style={{
           position: 'absolute',
-          top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          backdropFilter: 'blur(4px)',
+          top: '50%', left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'rgba(0, 0, 0, 0.6)',
+          borderRadius: '50%',
+          width: '80px',
+          height: '80px',
           display: 'flex',
-          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 10,
-          padding: '20px',
-          gap: '10px'
+          pointerEvents: 'none'
         }}>
           <Loader2 
             size={42} 
             color="var(--color-gold)" 
             style={{ animation: 'spin 1s linear infinite' }} 
           />
-          <div style={{ color: '#ffffff', fontSize: '1.6rem', fontWeight: '700', letterSpacing: '1px' }}>
-            {loadPercent}%
-          </div>
-          <div style={{ color: 'rgba(255, 255, 255, 0.7)', fontSize: '0.85rem', fontWeight: '500' }}>
-            Loading Video...
-          </div>
-          <div style={{ width: '180px', height: '6px', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: '3px', overflow: 'hidden', marginTop: '4px' }}>
-            <div style={{ width: `${loadPercent}%`, height: '100%', backgroundColor: 'var(--color-gold)', transition: 'width 0.2s ease-out' }} />
-          </div>
         </div>
       )}
 
