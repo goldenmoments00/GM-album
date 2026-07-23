@@ -220,9 +220,7 @@ export default function VideoPlayerPage({ session }) {
           <ArrowLeft size={16} /> Back to Dashboard
         </button>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.9rem', fontWeight: '500', marginRight: '5px', whiteSpace: 'nowrap' }}>
-            Status: {videoData.status}
-          </span>
+
           <button className="btn-outline" onClick={() => updateStatus('Needs Changes')} style={{ display: 'flex', gap: '5px', alignItems: 'center', whiteSpace: 'nowrap' }}>
             <AlertCircle size={16} /> Needs Changes
           </button>
