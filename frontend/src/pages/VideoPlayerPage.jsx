@@ -27,10 +27,13 @@ export default function VideoPlayerPage({ session }) {
     setCurrentTimestamp(time);
   };
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleAddComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || isSubmitting) return;
 
+    setIsSubmitting(true);
     const timeToSave = videoRef.current ? videoRef.current.currentTime : currentTimestamp;
 
     try {
@@ -61,6 +64,8 @@ export default function VideoPlayerPage({ session }) {
       }
     } catch (err) {
       console.error('Failed to add comment', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -167,8 +172,8 @@ export default function VideoPlayerPage({ session }) {
               }}
               style={{ flex: 1 }}
             />
-            <button type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <Send size={16} /> Send
+            <button type="submit" disabled={isSubmitting} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px', opacity: isSubmitting ? 0.7 : 1, cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
+              <Send size={16} /> {isSubmitting ? 'SENDING...' : 'SEND'}
             </button>
           </form>
         </div>
