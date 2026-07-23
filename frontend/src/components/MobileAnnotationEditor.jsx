@@ -505,7 +505,7 @@ export default function MobileAnnotationEditor({
     
     outCanvas.toBlob(async (blob) => {
       const formData = new FormData();
-      formData.append('screenshot', blob, 'screenshot.png');
+      formData.append('screenshot', blob, 'screenshot.jpg');
       
       if (voiceBlob) {
         formData.append('voice', voiceBlob, 'voice.webm');
@@ -535,7 +535,7 @@ export default function MobileAnnotationEditor({
         alert(`Failed to save review. Reason: ${err.message}`);
         setIsSaving(false);
       }
-    }, 'image/png', 1.0);
+    }, 'image/jpeg', 0.7);
   };
 
   // Determine if portrait
