@@ -51,16 +51,15 @@ export default function AlbumThumbnail({ folderId, fileName }) {
 
   if (loading || !thumbnail) {
     return (
-      <div style={{ 
+      <div className="skeleton-box" style={{ 
         width: '100%', 
         height: '100%',
         aspectRatio: '16/9',
-        backgroundColor: 'var(--color-grey-light)',
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
       }}>
-        <BookOpen size={40} color="var(--color-grey-soft)" />
+        <BookOpen size={40} color="var(--color-border)" />
       </div>
     );
   }
@@ -74,7 +73,7 @@ export default function AlbumThumbnail({ folderId, fileName }) {
       justifyContent: 'center',
       alignItems: 'center',
       perspective: '1000px',
-      backgroundColor: 'var(--color-grey-light)'
+      backgroundColor: '#f5f5f5'
     }}>
       {/* Book Cover Container */}
       <div style={{
