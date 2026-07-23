@@ -262,15 +262,28 @@ export default function Dashboard({ session }) {
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }} 
               >
-                {video.thumbnail ? (
-                  <img 
-                    src={video.thumbnail} 
-                    alt={video.title}
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  />
-                ) : (
-                  <div style={{ width: '100%', height: '100%', backgroundColor: '#222' }} />
-                )}
+                <div style={{ 
+                  width: '100%', 
+                  height: '100%', 
+                  backgroundColor: 'var(--color-cream)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '20px',
+                  textAlign: 'center',
+                  border: '1px solid rgba(0,0,0,0.05)'
+                }}>
+                  <h2 style={{ 
+                    color: 'var(--color-text-main)', 
+                    fontFamily: 'var(--font-heading)', 
+                    fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', 
+                    textTransform: 'uppercase',
+                    margin: 0,
+                    opacity: 0.8
+                  }}>
+                    {video.title}
+                  </h2>
+                </div>
                 <div style={{ 
                   position: 'absolute', 
                   top: 0, left: 0, right: 0, bottom: 0, 
