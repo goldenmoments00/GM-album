@@ -357,7 +357,7 @@ export default function Login({ onLogin }) {
             fontWeight: '400',
             lineHeight: '1.4'
           }}>
-            Enter your private album password to view your design
+            Enter your order ID to view your project (can be found on your agreements or ask the editor)
           </p>
         </div>
 
@@ -384,7 +384,7 @@ export default function Login({ onLogin }) {
             
             <input 
               type={showPassword ? 'text' : 'password'}
-              placeholder="e.g. GM001"
+              placeholder="Your order ID"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onFocus={() => setIsFocused(true)}
