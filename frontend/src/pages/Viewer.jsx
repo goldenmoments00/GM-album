@@ -20,7 +20,7 @@ export default function Viewer({ session }) {
     else loadingMessage = "Adding finishing touches...";
 
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--color-cream)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#ffffff' }}>
         <img 
           src="/loading.gif" 
           alt="Loading..." 

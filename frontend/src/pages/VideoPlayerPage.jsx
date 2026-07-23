@@ -46,7 +46,17 @@ export default function VideoPlayerPage({ session }) {
       });
       const data = await response.json();
       if (data.success) {
-        setVideoData(prev => ({ ...prev, comments: data.comments }));
+        setVideoData(prev => {
+          const mergedComments = [...prev.comments];
+          data.comments.forEach(c => {
+            if (!mergedComments.find(mc => mc.id === c.id)) {
+              mergedComments.push(c);
+            }
+          });
+          // Sort comments by timestamp
+          mergedComments.sort((a, b) => a.timestamp - b.timestamp);
+          return { ...prev, comments: mergedComments };
+        });
         setNewComment('');
       }
     } catch (err) {
