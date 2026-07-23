@@ -4,7 +4,6 @@ import { Lock, Eye, EyeOff, Loader2, ChevronRight } from 'lucide-react';
 
 export default function Login({ onLogin }) {
   const [password, setPassword] = useState(localStorage.getItem('savedPassword') || '');
-  const [rememberMe, setRememberMe] = useState(localStorage.getItem('rememberMe') === 'true');
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [error, setError] = useState('');
@@ -34,13 +33,8 @@ export default function Login({ onLogin }) {
         throw new Error(data.error || 'Invalid password. Please try again.');
       }
 
-      if (rememberMe) {
-        localStorage.setItem('savedPassword', password.trim());
-        localStorage.setItem('rememberMe', 'true');
-      } else {
-        localStorage.removeItem('savedPassword');
-        localStorage.removeItem('rememberMe');
-      }
+      // Always remember the password automatically
+      localStorage.setItem('savedPassword', password.trim());
 
       onLogin({
         folderId: data.folderId,
@@ -420,26 +414,8 @@ export default function Login({ onLogin }) {
             </button>
           </div>
 
-          {/* Remember Me Checkbox */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '-4px' }}>
-            <label style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              color: '#880e4f',
-              fontSize: '0.88rem',
-              fontWeight: '500'
-            }}>
-              <input 
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                style={{ accentColor: '#b71c1c', width: '16px', height: '16px', cursor: 'pointer' }}
-              />
-              Remember password
-            </label>
-
+          {/* Error Message */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: '-4px' }}>
             {error && (
               <span style={{ color: '#dc2626', fontSize: '0.82rem', fontWeight: '600' }}>
                 {error}
