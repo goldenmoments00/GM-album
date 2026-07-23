@@ -291,8 +291,10 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
   const containerStyle = {
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: 'var(--color-cream)',
-    backgroundImage: 'none',
+    backgroundColor: '#1a120b',
+    backgroundImage: 'radial-gradient(circle at 15% 15%, rgba(255, 240, 210, 0.25) 0%, rgba(0, 0, 0, 0.5) 45%, rgba(0, 0, 0, 0.85) 100%), url("/wood-bg.jpg")',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
     overflow: 'hidden',
     touchAction: 'none',
     zIndex: 0,
@@ -414,11 +416,11 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           <span style={{
             fontFamily: "'Breathing', cursive",
             fontSize: 'clamp(2.2rem, 3.8vw, 3.2rem)',
-            color: 'var(--color-primary)',
-            mixBlendMode: 'normal',
+            color: '#ffffff',
+            mixBlendMode: 'overlay',
             textTransform: 'capitalize',
             marginBottom: '0px',
-            textShadow: '0 2px 8px rgba(139, 21, 26, 0.1)',
+            textShadow: '0 4px 12px rgba(0,0,0,0.4)',
             lineHeight: 1.1
           }}>
             {decodeURIComponent(fileId).replace('.pdf', '')}
@@ -426,14 +428,14 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           <span style={{
             fontFamily: "'Inter', sans-serif",
             fontSize: 'clamp(0.8rem, 1.1vw, 0.95rem)',
-            color: 'var(--color-primary)',
-            mixBlendMode: 'normal',
-            fontWeight: 400,
+            color: '#ffffff',
+            mixBlendMode: 'overlay',
+            fontWeight: 300,
             letterSpacing: '1.5px',
             textAlign: 'center',
             padding: '0 20px',
             marginTop: '2px',
-            textShadow: 'none'
+            textShadow: '0 2px 8px rgba(0,0,0,0.4)'
           }}>
             {randomQuote}
           </span>
@@ -479,8 +481,8 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
               <span style={{
                 fontFamily: "'Breathing', cursive",
                 fontSize: '8rem',
-                color: 'var(--color-primary)',
-                mixBlendMode: 'normal',
+                color: '#ffffff',
+                mixBlendMode: 'overlay',
                 transform: 'rotate(-5deg)'
               }}>Thank You</span>
             </div>
