@@ -265,7 +265,7 @@ export default function Dashboard({ session }) {
                 <div style={{ 
                   width: '100%', 
                   height: '100%', 
-                  backgroundColor: 'var(--color-cream)',
+                  backgroundColor: '#8a1212',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -274,12 +274,12 @@ export default function Dashboard({ session }) {
                   border: '1px solid rgba(0,0,0,0.05)'
                 }}>
                   <h2 style={{ 
-                    color: 'var(--color-text-main)', 
+                    color: '#ffffff', 
                     fontFamily: 'var(--font-heading)', 
                     fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', 
                     textTransform: 'uppercase',
                     margin: 0,
-                    opacity: 0.8
+                    opacity: 0.95
                   }}>
                     {video.title}
                   </h2>
