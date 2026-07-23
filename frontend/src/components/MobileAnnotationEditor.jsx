@@ -389,7 +389,8 @@ export default function MobileAnnotationEditor({
       };
       
       mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const mimeType = mediaRecorder.mimeType || 'audio/mp4'; // Fallback to mp4 for iOS if empty
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
         setVoiceBlob(audioBlob);
         setVoiceUrl(URL.createObjectURL(audioBlob));
         stream.getTracks().forEach(track => track.stop());
@@ -508,7 +509,10 @@ export default function MobileAnnotationEditor({
       formData.append('screenshot', blob, 'screenshot.jpg');
       
       if (voiceBlob) {
-        formData.append('voice', voiceBlob, 'voice.webm');
+        const ext = voiceBlob.type.includes('mp4') ? 'mp4' : 
+                    voiceBlob.type.includes('webm') ? 'webm' : 
+                    voiceBlob.type.includes('ogg') ? 'ogg' : 'm4a';
+        formData.append('voice', voiceBlob, `voice.${ext}`);
       }
       
       formData.append('folderId', metadata.folderId || '');
