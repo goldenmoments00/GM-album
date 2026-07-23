@@ -454,8 +454,8 @@ export default function MobileAnnotationEditor({
   const editorUI = (
     <div style={{
       position: 'fixed', top: 0, left: 0,
-      width: isPortraitScreen ? '100vh' : '100vw',
-      height: isPortraitScreen ? '100vw' : '100vh',
+      width: isPortraitScreen ? '100dvh' : '100dvw',
+      height: isPortraitScreen ? '100dvw' : '100dvh',
       backgroundColor: '#000', zIndex: 100000, display: 'flex', flexDirection: 'column',
       // Rotate the editor to landscape when phone is portrait
       ...(isPortraitScreen ? {
