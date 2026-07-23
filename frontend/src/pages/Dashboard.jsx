@@ -217,23 +217,27 @@ export default function Dashboard({ session }) {
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
         gap: '30px' 
       }}>
-        {activeTab === 'albums' && albums.map((album, index) => (
-          <div key={index} className="glass-panel" style={{ 
-            padding: '24px', 
-            textAlign: 'center',
+        {activeTab === 'albums' && albums.map((album, index) => {
+          const status = projectStatus?.albums?.[album.file]?.status || 'Waiting for Review';
+          return (
+          <div key={index} style={{ 
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            minHeight: '250px'
-          }}>
-            <AlbumThumbnail folderId={folderId} fileName={album.file} />
-            <h3 style={{ fontSize: '1.4rem', marginBottom: '15px' }}>{album.title}</h3>
-            <button className="btn-primary" onClick={() => handleOpenAlbum(album.file)} style={{ width: '100%' }}>
-              Open Album
-            </button>
+            cursor: 'pointer'
+          }} onClick={() => handleOpenAlbum(album.file)}>
+            <div style={{ width: '100%', overflow: 'hidden', borderRadius: '12px' }}>
+              <AlbumThumbnail folderId={folderId} fileName={album.file} />
+            </div>
+            <div style={{ marginTop: '15px', textAlign: 'left' }}>
+              <span style={{ color: 'var(--color-primary)', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                {status}
+              </span>
+              <h3 style={{ fontSize: '1.4rem', margin: '5px 0 0 0', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', color: 'var(--color-text-main)' }}>
+                {album.title}
+              </h3>
+            </div>
           </div>
-        ))}
+        )})}
 
         {activeTab === 'videos' && videos.length === 0 && (
           <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--color-text-muted)' }}>No videos available for review.</p>
@@ -242,28 +246,21 @@ export default function Dashboard({ session }) {
         {activeTab === 'videos' && videos.map((video, index) => {
           const status = projectStatus?.videos?.[video.file]?.status || 'Waiting for Review';
           return (
-            <div key={index} className="glass-panel" style={{ 
-              padding: '24px', 
-              textAlign: 'center',
+            <div key={index} style={{ 
               display: 'flex',
               flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              minHeight: '250px'
-            }}>
+              cursor: 'pointer'
+            }} onClick={() => handleOpenVideo(video.file)}>
               <div 
                 style={{ 
                   width: '100%', 
-                  height: '160px', 
+                  aspectRatio: '16/9', 
                   backgroundColor: '#111', 
-                  borderRadius: '10px', 
-                  marginBottom: '15px', 
+                  borderRadius: '12px', 
                   overflow: 'hidden', 
-                  position: 'relative', 
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                  position: 'relative',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }} 
-                onClick={() => handleOpenVideo(video.file)}
               >
                 <video 
                   src={`/api/video/stream/${folderId}/${encodeURIComponent(video.file)}#t=0.5`} 
@@ -273,34 +270,36 @@ export default function Dashboard({ session }) {
                 <div style={{ 
                   position: 'absolute', 
                   top: 0, left: 0, right: 0, bottom: 0, 
-                  background: 'linear-gradient(to bottom, rgba(0,0,0,0.1), rgba(0,0,0,0.4))', 
+                  background: 'rgba(0,0,0,0.1)', 
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center',
                   transition: 'background 0.2s ease'
                 }}>
                   <div style={{ 
-                    width: '48px', 
-                    height: '48px', 
+                    width: '60px', 
+                    height: '60px', 
                     borderRadius: '50%', 
-                    backgroundColor: 'rgba(197, 160, 89, 0.9)', 
+                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                    backdropFilter: 'blur(4px)', 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center', 
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)', 
-                    paddingLeft: '3px' 
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
+                    paddingLeft: '4px' 
                   }}>
-                    <Play size={22} color="#fff" fill="#fff" />
+                    <Play size={28} color="#fff" fill="#fff" />
                   </div>
                 </div>
               </div>
-              <h3 style={{ fontSize: '1.4rem', marginBottom: '5px' }}>{video.title}</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
-                {getStatusIcon(status)} {status}
-              </p>
-              <button className="btn-primary" onClick={() => handleOpenVideo(video.file)} style={{ width: '100%' }}>
-                Review Video
-              </button>
+              <div style={{ marginTop: '15px', textAlign: 'left' }}>
+                <span style={{ color: 'var(--color-primary)', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                  {status}
+                </span>
+                <h3 style={{ fontSize: '1.4rem', margin: '5px 0 0 0', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', color: 'var(--color-text-main)' }}>
+                  {video.title}
+                </h3>
+              </div>
             </div>
           );
         })}

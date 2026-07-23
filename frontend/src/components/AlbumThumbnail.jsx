@@ -53,13 +53,12 @@ export default function AlbumThumbnail({ folderId, fileName }) {
     return (
       <div style={{ 
         width: '100%', 
-        height: '220px', 
+        height: '100%',
+        aspectRatio: '16/9',
         backgroundColor: 'var(--color-grey-light)',
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center',
-        borderRadius: '8px',
-        marginBottom: '20px'
       }}>
         <BookOpen size={40} color="var(--color-grey-soft)" />
       </div>
@@ -69,12 +68,13 @@ export default function AlbumThumbnail({ folderId, fileName }) {
   return (
     <div style={{
       width: '100%',
-      height: '220px',
-      marginBottom: '20px',
+      height: '100%',
+      aspectRatio: '16/9',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      perspective: '1000px'
+      perspective: '1000px',
+      backgroundColor: 'var(--color-grey-light)'
     }}>
       {/* Book Cover Container */}
       <div style={{
