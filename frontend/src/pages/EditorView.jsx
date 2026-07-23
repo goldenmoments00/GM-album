@@ -105,19 +105,12 @@ export default function EditorView() {
   return (
     <div style={{ backgroundColor: '#111', minHeight: '100vh', color: 'white', padding: '20px' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+        <div style={{ marginBottom: '20px' }}>
           <button 
             onClick={() => navigate('/dashboard')} 
             style={{ background: 'none', border: 'none', color: 'var(--color-gold)', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '1rem' }}
           >
-            <ChevronLeft size={20} /> Back to Dashboard
-          </button>
-          
-          <button 
-            onClick={() => navigate(`/viewer/${encodeURIComponent(albumId.replace(/\.pdf$/i, ''))}`)} 
-            style={{ background: 'rgba(139, 21, 26, 0.2)', border: '1px solid var(--color-primary)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', fontSize: '0.9rem', padding: '5px 15px', borderRadius: '20px', fontWeight: 'bold' }}
-          >
-            Open Album <Maximize2 size={16} />
+            <ChevronLeft size={20} /> Back
           </button>
         </div>
 
