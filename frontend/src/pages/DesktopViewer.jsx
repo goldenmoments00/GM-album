@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import HTMLFlipBook from 'react-pageflip';
-import { ArrowLeft, Check, MessageSquare, Maximize, RotateCcw, ZoomIn, ZoomOut, Pencil } from 'lucide-react';
+import { ArrowLeft, Check, MessageSquare, Maximize, Minimize, RotateCcw, ZoomIn, ZoomOut, Pencil } from 'lucide-react';
 import FeedbackModal from '../components/FeedbackModal';
 import MobileAnnotationEditor from '../components/MobileAnnotationEditor';
 
@@ -366,6 +366,38 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           </button>
         </div>
       </div>
+
+      {/* Floating Exit Fullscreen Button for Immersive Mode */}
+      {immersiveMode && (
+        <button 
+          onClick={() => {
+            if (document.fullscreenElement && document.exitFullscreen) {
+              document.exitFullscreen().catch(console.error);
+            }
+            setImmersiveMode(false);
+          }}
+          style={{
+            position: 'absolute',
+            top: '15px',
+            right: '15px',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50%',
+            width: '44px',
+            height: '44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 20,
+            cursor: 'pointer',
+            boxShadow: '0 2px 10px rgba(0,0,0,0.3)'
+          }}
+          title="Exit Fullscreen"
+        >
+          <Minimize size={20} />
+        </button>
+      )}
 
       {/* Painted Album Name at the Top */}
       {!isPortraitLayout && (
