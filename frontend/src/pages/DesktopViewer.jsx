@@ -338,8 +338,8 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
       <div className="viewer-toolbar" style={{
         position: 'absolute',
         top: 0, left: 0, right: 0,
-        height: '70px',
-        background: 'linear-gradient(to bottom, rgba(248, 243, 233, 0.9) 0%, rgba(248, 243, 233, 0) 100%)',
+        height: '80px',
+        background: 'linear-gradient(to bottom, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0) 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
