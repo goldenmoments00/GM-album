@@ -342,7 +342,7 @@ async function streamVideo(folderId, fileName, res, rangeHeader) {
     const query = `name = '${fileName}' and '${folderId}' in parents and (mimeType = 'video/mp4' or mimeType = 'video/quicktime' or mimeType contains 'video/') and trashed = false`;
     const searchRes = await driveApi.files.list({
       q: query,
-      fields: 'files(id, name, size)',
+      fields: 'files(id, name, size, mimeType)',
     });
 
     if (searchRes.data.files.length === 0) {
@@ -352,6 +352,7 @@ async function streamVideo(folderId, fileName, res, rangeHeader) {
 
     const fileId = searchRes.data.files[0].id;
     const fileSize = searchRes.data.files[0].size;
+    const mimeType = searchRes.data.files[0].mimeType || 'video/mp4';
     
     const requestHeaders = {};
     if (rangeHeader) {
@@ -363,10 +364,10 @@ async function streamVideo(folderId, fileName, res, rangeHeader) {
       { headers: requestHeaders, responseType: 'stream' }
     );
 
-    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Type', mimeType);
     res.setHeader('Accept-Ranges', 'bytes');
     
-    if (fileRes.headers['content-range']) {
+    if (fileRes.status === 206 || fileRes.headers['content-range']) {
       res.status(206);
       res.setHeader('Content-Range', fileRes.headers['content-range']);
     }
