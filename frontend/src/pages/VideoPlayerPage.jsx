@@ -209,7 +209,7 @@ export default function VideoPlayerPage({ session }) {
     const text = `Review has been placed for Project: ${folderId} - File: ${cleanFileId}. Kindly check.`;
     
     if (isMobile) {
-      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      const url = `https://wa.me/916009426410?text=${encodeURIComponent(text)}`;
       window.open(url, '_blank');
     } else {
       navigator.clipboard.writeText(text).then(() => {

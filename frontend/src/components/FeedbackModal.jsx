@@ -65,7 +65,7 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
           modalRef.current.style.opacity = '1';
         }
 
-        const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        const url = `https://wa.me/916009426410?text=${encodeURIComponent(text)}`;
         
         setTimeout(() => {
           window.location.href = url;
