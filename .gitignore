@@ -5,4 +5,5 @@ node_modules
 dist/
 build/
 backend/service-account.json
+backend/firebase-key.json
 *.log
