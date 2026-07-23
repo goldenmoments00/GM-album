@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AlbumThumbnail from '../components/AlbumThumbnail';
-import { Film, BookOpen, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, Play } from 'lucide-react';
+import { Film, BookOpen, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp, Play, LogOut } from 'lucide-react';
 
 export default function Dashboard({ session }) {
   const navigate = useNavigate();
@@ -43,9 +43,22 @@ export default function Dashboard({ session }) {
     return 'var(--color-error)'; // Red (Waiting for Review)
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('savedPassword');
+    window.location.href = '/login';
+  };
+
   return (
-    <div className="page-container" style={{ padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
-      <header style={{ textAlign: 'center', marginBottom: '40px' }}>
+    <div className="page-container" style={{ padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', width: '100%', position: 'relative' }}>
+      <button 
+        onClick={handleLogout}
+        className="btn-outline"
+        style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 14px', fontSize: '0.85rem' }}
+      >
+        <LogOut size={16} /> Logout
+      </button>
+
+      <header style={{ textAlign: 'center', marginBottom: '40px', marginTop: '20px' }}>
         <h1 style={{ fontSize: '3rem', color: 'var(--color-primary)', marginBottom: '10px' }}>
           Project: {albumId}
         </h1>
