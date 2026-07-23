@@ -354,10 +354,19 @@ async function streamVideo(folderId, fileName, res, rangeHeader) {
     const fileSize = searchRes.data.files[0].size;
     const mimeType = searchRes.data.files[0].mimeType || 'video/mp4';
     
-    const requestHeaders = {};
+    let start = 0;
+    let end = parseInt(fileSize) - 1;
+
     if (rangeHeader) {
-      requestHeaders['Range'] = rangeHeader;
+      const parts = rangeHeader.replace(/bytes=/, "").split("-");
+      start = parseInt(parts[0], 10);
+      end = parts[1] ? parseInt(parts[1], 10) : end;
     }
+    
+    const chunksize = (end - start) + 1;
+    const requestHeaders = {
+      'Range': `bytes=${start}-${end}`
+    };
 
     const fileRes = await driveApi.files.get(
       { fileId: fileId, alt: 'media' },
@@ -367,14 +376,12 @@ async function streamVideo(folderId, fileName, res, rangeHeader) {
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Accept-Ranges', 'bytes');
     
-    if (fileRes.status === 206 || fileRes.headers['content-range']) {
+    if (rangeHeader) {
       res.status(206);
-      res.setHeader('Content-Range', fileRes.headers['content-range']);
-    }
-    
-    if (fileRes.headers['content-length']) {
-      res.setHeader('Content-Length', fileRes.headers['content-length']);
-    } else if (fileSize && !rangeHeader) {
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+      res.setHeader('Content-Length', chunksize);
+    } else {
+      res.status(200);
       res.setHeader('Content-Length', fileSize);
     }
 
