@@ -20,7 +20,7 @@ export default function Viewer({ session }) {
     else loadingMessage = "Adding finishing touches...";
 
     return (
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#ffffff' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: 'var(--color-cream)' }}>
         <img 
           src="/loading.gif" 
           alt="Loading..." 
@@ -32,12 +32,20 @@ export default function Viewer({ session }) {
             marginBottom: '10px' 
           }} 
         />
-        <h2 style={{ color: 'var(--color-gold)', marginBottom: '10px' }}>Loading Your Album...</h2>
-        <p style={{ color: '#666', marginBottom: '20px', fontStyle: 'italic' }}>{loadingMessage}</p>
-        <div style={{ width: '300px', height: '4px', backgroundColor: '#eee', borderRadius: '2px', overflow: 'hidden' }}>
-          <div style={{ width: `${displayProgress}%`, height: '100%', backgroundColor: 'var(--color-gold)', transition: 'width 0.2s ease-out' }}></div>
+        <h2 style={{ 
+          color: 'var(--color-primary)', 
+          marginBottom: '10px', 
+          textTransform: 'uppercase', 
+          fontFamily: 'var(--font-heading)',
+          letterSpacing: '1px'
+        }}>
+          Loading Your Album...
+        </h2>
+        <p style={{ color: 'var(--color-text-muted)', marginBottom: '20px', fontStyle: 'italic', fontFamily: 'var(--font-sans)' }}>{loadingMessage}</p>
+        <div style={{ width: '300px', height: '4px', backgroundColor: 'rgba(139, 21, 26, 0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+          <div style={{ width: `${displayProgress}%`, height: '100%', backgroundColor: 'var(--color-primary)', transition: 'width 0.2s ease-out' }}></div>
         </div>
-        <p style={{ marginTop: '10px', color: '#666', fontWeight: '500' }}>{displayProgress}%</p>
+        <p style={{ marginTop: '10px', color: 'var(--color-text-muted)', fontWeight: '500', fontFamily: 'var(--font-sans)' }}>{displayProgress}%</p>
       </div>
     );
   }
