@@ -11,11 +11,15 @@
   --color-white: #ffffff;
   --color-ivory: #fffff0;
   --color-gold: #c5a059;
-  --color-gold-light: #e6c587;
+  --color-gold-light: #e4c585;
   --color-gold-dark: #a38038;
-  --color-grey-soft: #f5f5f5;
-  --color-grey-dark: #666666;
-  --color-text-matte: #2c2c2c;
+  --color-bg-main: #0d0d0d;
+  --color-bg-surface: #1a1a1a;
+  --color-text-main: #fcfcfc;
+  --color-text-muted: #a0a0a0;
+  --color-border: rgba(197, 160, 89, 0.2);
+  --color-success: #10b981;
+  --color-error: #ef4444;
 
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'Playfair Display', serif;
@@ -39,8 +43,10 @@ body::-webkit-scrollbar {
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-grey-soft);
-  color: var(--color-text-matte);
+  background-color: var(--color-bg-main);
+  background-image: radial-gradient(circle at 50% 0%, #2a2318 0%, #0d0d0d 70%);
+  background-attachment: fixed;
+  color: var(--color-text-main);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -52,43 +58,51 @@ h5,
 h6 {
   font-family: var(--font-serif);
   font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 /* Glassmorphism Utilities */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
   border-radius: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(197, 160, 89, 0.4);
+  box-shadow: 0 15px 50px -10px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(197, 160, 89, 0.05);
 }
 
 /* Buttons */
 .btn-gold {
-  background-color: var(--color-gold);
-  color: var(--color-white);
+  background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 100%);
+  color: #111;
   border: none;
   padding: 12px 24px;
   border-radius: 8px;
   font-family: var(--font-sans);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(197, 160, 89, 0.3);
+  box-shadow: 0 4px 15px rgba(197, 160, 89, 0.2);
 }
 
 .btn-gold:hover {
   background-color: var(--color-gold-dark);
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(197, 160, 89, 0.4);
+  filter: brightness(1.1);
 }
 
 .btn-outline {
-  background-color: transparent;
-  color: var(--color-text-matte);
-  border: 1px solid var(--color-text-matte);
+  background-color: rgba(255, 255, 255, 0.05);
+  color: var(--color-gold);
+  border: 1px solid var(--color-gold);
   padding: 12px 24px;
   border-radius: 8px;
   font-family: var(--font-sans);
@@ -99,8 +113,8 @@ h6 {
 }
 
 .btn-outline:hover {
-  background-color: var(--color-text-matte);
-  color: var(--color-white);
+  background-color: var(--color-gold);
+  color: #111;
 }
 
 /* Inputs */

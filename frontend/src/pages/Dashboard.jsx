@@ -38,9 +38,9 @@ export default function Dashboard({ session }) {
   };
 
   const getStatusColor = (status) => {
-    if (status === 'Approved') return '#137333'; // Green
+    if (status === 'Approved') return 'var(--color-success)'; // Green
     if (status === 'Needs Changes') return 'var(--color-gold)'; // Gold
-    return '#c5221f'; // Red (Waiting for Review)
+    return 'var(--color-error)'; // Red (Waiting for Review)
   };
 
   return (
@@ -49,7 +49,7 @@ export default function Dashboard({ session }) {
         <h1 style={{ fontSize: '2.5rem', color: 'var(--color-gold)', marginBottom: '10px' }}>
           Project: {albumId}
         </h1>
-        <p style={{ color: 'var(--color-grey-dark)', fontSize: '1.1rem' }}>
+        <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem' }}>
           Please review and approve your albums and videos below.
         </p>
       </header>
@@ -81,15 +81,15 @@ export default function Dashboard({ session }) {
 
           return (
             <div style={{ marginBottom: '20px' }}>
-              <div style={{ display: 'flex', gap: '15px', fontSize: '0.9rem', fontWeight: '600', color: 'var(--color-grey-dark)', marginBottom: '10px', flexWrap: 'wrap' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: '#137333'}}/> {stats.approved} Approved</span>
+              <div style={{ display: 'flex', gap: '15px', fontSize: '0.9rem', fontWeight: '600', color: 'var(--color-text-muted)', marginBottom: '10px', flexWrap: 'wrap' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: 'var(--color-success)'}}/> {stats.approved} Approved</span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: 'var(--color-gold)'}}/> {stats.changes} Needs Changes</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: '#c5221f'}}/> {stats.waiting} Waiting</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><div style={{width: 10, height: 10, borderRadius: '50%', backgroundColor: 'var(--color-error)'}}/> {stats.waiting} Waiting</span>
               </div>
-              <div style={{ width: '100%', height: '14px', borderRadius: '8px', display: 'flex', overflow: 'hidden', backgroundColor: 'rgba(0,0,0,0.05)' }}>
-                {approvedPct > 0 && <div style={{ width: `${approvedPct}%`, backgroundColor: '#137333', transition: 'width 0.5s ease' }} title={`Approved: ${stats.approved}`} />}
+              <div style={{ width: '100%', height: '14px', borderRadius: '8px', display: 'flex', overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+                {approvedPct > 0 && <div style={{ width: `${approvedPct}%`, backgroundColor: 'var(--color-success)', transition: 'width 0.5s ease' }} title={`Approved: ${stats.approved}`} />}
                 {changesPct > 0 && <div style={{ width: `${changesPct}%`, backgroundColor: 'var(--color-gold)', transition: 'width 0.5s ease' }} title={`Needs Changes: ${stats.changes}`} />}
-                {waitingPct > 0 && <div style={{ width: `${waitingPct}%`, backgroundColor: '#c5221f', transition: 'width 0.5s ease' }} title={`Waiting: ${stats.waiting}`} />}
+                {waitingPct > 0 && <div style={{ width: `${waitingPct}%`, backgroundColor: 'var(--color-error)', transition: 'width 0.5s ease' }} title={`Waiting: ${stats.waiting}`} />}
               </div>
             </div>
           );
@@ -115,26 +115,25 @@ export default function Dashboard({ session }) {
         {isOverviewExpanded && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', marginTop: '15px' }}>
             {albums.map((a, i) => {
-              const status = projectStatus?.albums?.[a.file]?.status || 'Waiting for Review';
-              const bgColor = status === 'Approved' ? '#f0fdf4' : status === 'Needs Changes' ? '#fffdf5' : '#fef2f2';
+              const bgColor = status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : status === 'Needs Changes' ? 'rgba(197, 160, 89, 0.1)' : 'rgba(239, 68, 68, 0.1)';
               return (
                 <div key={`a-${i}`} style={{ 
                   display: 'flex', flexDirection: 'column', gap: '8px',
                   padding: '10px 12px', backgroundColor: bgColor, borderRadius: '10px', 
-                  border: '1px solid rgba(0,0,0,0.05)',
+                  border: '1px solid rgba(255,255,255,0.05)',
                   borderLeft: `3px solid ${getStatusColor(status)}`,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
                   cursor: 'pointer',
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 5px 12px rgba(0,0,0,0.08)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.04)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 5px 12px rgba(0,0,0,0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)'; }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <BookOpen size={16} style={{ flexShrink: 0, color: getStatusColor(status) }} />
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '600', fontSize: '0.85rem', color: 'var(--color-text-matte)' }}>{a.title}</span>
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '600', fontSize: '0.85rem', color: 'var(--color-text-main)' }}>{a.title}</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: '600', padding: '3px 6px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.7)', color: getStatusColor(status), width: 'fit-content', border: '1px solid rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: '600', padding: '3px 6px', borderRadius: '6px', backgroundColor: 'rgba(0,0,0,0.5)', color: getStatusColor(status), width: 'fit-content', border: '1px solid rgba(255,255,255,0.05)' }}>
                     {getStatusIcon(status)}
                     {status}
                   </div>
@@ -143,25 +142,25 @@ export default function Dashboard({ session }) {
             })}
             {videos.map((v, i) => {
               const status = projectStatus?.videos?.[v.file]?.status || 'Waiting for Review';
-              const bgColor = status === 'Approved' ? '#f0fdf4' : status === 'Needs Changes' ? '#fffdf5' : '#fef2f2';
+              const bgColor = status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : status === 'Needs Changes' ? 'rgba(197, 160, 89, 0.1)' : 'rgba(239, 68, 68, 0.1)';
               return (
                 <div key={`v-${i}`} style={{ 
                   display: 'flex', flexDirection: 'column', gap: '8px',
                   padding: '10px 12px', backgroundColor: bgColor, borderRadius: '10px', 
-                  border: '1px solid rgba(0,0,0,0.05)',
+                  border: '1px solid rgba(255,255,255,0.05)',
                   borderLeft: `3px solid ${getStatusColor(status)}`,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
                   cursor: 'pointer',
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 5px 12px rgba(0,0,0,0.08)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.04)'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 5px 12px rgba(0,0,0,0.3)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)'; }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Film size={16} style={{ flexShrink: 0, color: getStatusColor(status) }} />
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '600', fontSize: '0.85rem', color: 'var(--color-text-matte)' }}>{v.title}</span>
+                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '600', fontSize: '0.85rem', color: 'var(--color-text-main)' }}>{v.title}</span>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: '600', padding: '3px 6px', borderRadius: '6px', backgroundColor: 'rgba(255,255,255,0.7)', color: getStatusColor(status), width: 'fit-content', border: '1px solid rgba(0,0,0,0.05)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: '600', padding: '3px 6px', borderRadius: '6px', backgroundColor: 'rgba(0,0,0,0.5)', color: getStatusColor(status), width: 'fit-content', border: '1px solid rgba(255,255,255,0.05)' }}>
                     {getStatusIcon(status)}
                     {status}
                   </div>
@@ -173,19 +172,19 @@ export default function Dashboard({ session }) {
       </div>
 
       {/* Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '10px', padding: '5px', backgroundColor: 'rgba(255,255,255,0.4)', borderRadius: '12px', width: 'fit-content', margin: '0 auto 30px', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.05)' }}>
+      <div style={{ display: 'flex', gap: '10px', padding: '5px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '12px', width: 'fit-content', margin: '0 auto 30px', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.2)', border: '1px solid var(--color-border)' }}>
         <button 
           onClick={() => setActiveTab('albums')}
           style={{ 
-            background: activeTab === 'albums' ? '#fff' : 'transparent', 
+            background: activeTab === 'albums' ? 'var(--color-gold)' : 'transparent', 
             border: 'none', 
             padding: '12px 35px', 
             cursor: 'pointer', 
             fontSize: '1.1rem',
             borderRadius: '8px',
-            color: activeTab === 'albums' ? 'var(--color-gold)' : 'var(--color-grey-dark)',
+            color: activeTab === 'albums' ? '#111' : 'var(--color-text-muted)',
             fontWeight: activeTab === 'albums' ? '600' : '500',
-            boxShadow: activeTab === 'albums' ? '0 2px 10px rgba(0,0,0,0.08)' : 'none',
+            boxShadow: activeTab === 'albums' ? '0 2px 10px rgba(197, 160, 89, 0.3)' : 'none',
             transition: 'all 0.3s ease',
             outline: 'none'
           }}
@@ -195,15 +194,15 @@ export default function Dashboard({ session }) {
         <button 
           onClick={() => setActiveTab('videos')}
           style={{ 
-            background: activeTab === 'videos' ? '#fff' : 'transparent', 
+            background: activeTab === 'videos' ? 'var(--color-gold)' : 'transparent', 
             border: 'none', 
             padding: '12px 35px', 
             cursor: 'pointer', 
             fontSize: '1.1rem',
             borderRadius: '8px',
-            color: activeTab === 'videos' ? 'var(--color-gold)' : 'var(--color-grey-dark)',
+            color: activeTab === 'videos' ? '#111' : 'var(--color-text-muted)',
             fontWeight: activeTab === 'videos' ? '600' : '500',
-            boxShadow: activeTab === 'videos' ? '0 2px 10px rgba(0,0,0,0.08)' : 'none',
+            boxShadow: activeTab === 'videos' ? '0 2px 10px rgba(197, 160, 89, 0.3)' : 'none',
             transition: 'all 0.3s ease',
             outline: 'none'
           }}
@@ -220,7 +219,7 @@ export default function Dashboard({ session }) {
       }}>
         {activeTab === 'albums' && albums.map((album, index) => (
           <div key={index} className="glass-panel" style={{ 
-            padding: '30px', 
+            padding: '24px', 
             textAlign: 'center',
             display: 'flex',
             flexDirection: 'column',
@@ -237,14 +236,14 @@ export default function Dashboard({ session }) {
         ))}
 
         {activeTab === 'videos' && videos.length === 0 && (
-          <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--color-grey-dark)' }}>No videos available for review.</p>
+          <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--color-text-muted)' }}>No videos available for review.</p>
         )}
 
         {activeTab === 'videos' && videos.map((video, index) => {
           const status = projectStatus?.videos?.[video.file]?.status || 'Waiting for Review';
           return (
             <div key={index} className="glass-panel" style={{ 
-              padding: '30px', 
+              padding: '24px', 
               textAlign: 'center',
               display: 'flex',
               flexDirection: 'column',
@@ -296,7 +295,7 @@ export default function Dashboard({ session }) {
                 </div>
               </div>
               <h3 style={{ fontSize: '1.4rem', marginBottom: '5px' }}>{video.title}</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--color-grey-dark)', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
+              <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
                 {getStatusIcon(status)} {status}
               </p>
               <button className="btn-gold" onClick={() => handleOpenVideo(video.file)} style={{ width: '100%' }}>
