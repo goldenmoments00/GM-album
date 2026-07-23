@@ -91,7 +91,7 @@ export function usePdfLoader(session, fileId) {
           return canvas.toDataURL('image/jpeg', 0.8);
         };
 
-        const initialLoadCount = Math.min(5, structure.length);
+        const initialLoadCount = Math.min(2, structure.length);
         for (let i = 0; i < initialLoadCount; i++) {
           if (!structure[i].imgSrc) {
             structure[i].imgSrc = await renderPageToImage(structure[i].pdfPage, structure[i].type);
