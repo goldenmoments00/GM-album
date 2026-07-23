@@ -212,6 +212,8 @@ export default function CustomVideoPlayer({ src, onPause, forwardedRef }) {
         style={{ width: 'auto', maxWidth: '100%', maxHeight: '75vh', display: 'block', margin: '0 auto' }}
         controlsList="nodownload"
         disablePictureInPicture
+        playsInline
+        webkit-playsinline="true"
         onClick={togglePlay}
       />
       
