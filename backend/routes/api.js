@@ -99,9 +99,10 @@ router.post('/feedback', async (req, res) => {
 /**
  * GET /api/project-status/:id
  */
-router.get('/project-status/:id', (req, res) => {
+router.get('/project-status/:id', async (req, res) => {
   try {
-    res.json(dbService.getProjectStatus(req.params.id));
+    const status = await dbService.getProjectStatus(req.params.id);
+    res.json(status);
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch status' });
   }
@@ -139,9 +140,9 @@ router.get('/video/stream/:id/:file', async (req, res) => {
 /**
  * GET /api/video/data/:id/:file
  */
-router.get('/video/data/:id/:file', (req, res) => {
+router.get('/video/data/:id/:file', async (req, res) => {
   try {
-    const data = dbService.getVideoData(req.params.id, req.params.file);
+    const data = await dbService.getVideoData(req.params.id, req.params.file);
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: 'Failed to get video data' });
@@ -151,10 +152,10 @@ router.get('/video/data/:id/:file', (req, res) => {
 /**
  * POST /api/video/comment
  */
-router.post('/video/comment', (req, res) => {
+router.post('/video/comment', async (req, res) => {
   try {
     const { folderId, fileId, timestamp, commentText } = req.body;
-    const comments = dbService.addVideoComment(folderId, fileId, timestamp, commentText);
+    const comments = await dbService.addVideoComment(folderId, fileId, timestamp, commentText);
     res.json({ success: true, comments });
   } catch (err) {
     res.status(500).json({ error: 'Failed to add comment' });
@@ -164,10 +165,10 @@ router.post('/video/comment', (req, res) => {
 /**
  * POST /api/video/status
  */
-router.post('/video/status', (req, res) => {
+router.post('/video/status', async (req, res) => {
   try {
     const { folderId, fileId, status } = req.body;
-    const video = dbService.updateVideoStatus(folderId, fileId, status);
+    const video = await dbService.updateVideoStatus(folderId, fileId, status);
     res.json({ success: true, video });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update status' });

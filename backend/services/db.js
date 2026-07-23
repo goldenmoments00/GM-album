@@ -1,92 +1,91 @@
-const fs = require('fs');
-const path = require('path');
+const { db } = require('./firebase');
 
-const DB_FILE = path.join(__dirname, '../db.json');
-
-// Initialize DB if it doesn't exist
-if (!fs.existsSync(DB_FILE)) {
-  fs.writeFileSync(DB_FILE, JSON.stringify({ projects: {} }, null, 2));
-}
-
-function readDB() {
+async function getVideoData(folderId, fileName) {
+  if (!db) {
+    console.warn('[Firebase] Database not initialized');
+    return { status: 'Waiting for Review', comments: [] };
+  }
+  
   try {
-    const data = fs.readFileSync(DB_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (err) {
-    console.error('Error reading DB:', err);
-    return { projects: {} };
+    const docRef = db.collection('projects').doc(folderId).collection('videos').doc(fileName);
+    const doc = await docRef.get();
+    
+    if (!doc.exists) {
+      const newData = { status: 'Waiting for Review', comments: [] };
+      await docRef.set(newData);
+      return newData;
+    }
+    
+    return doc.data();
+  } catch (error) {
+    console.error('Error in getVideoData:', error);
+    return { status: 'Waiting for Review', comments: [] };
   }
 }
 
-function writeDB(data) {
+async function addVideoComment(folderId, fileName, timestamp, commentText) {
+  if (!db) return [];
+  
   try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
-  } catch (err) {
-    console.error('Error writing DB:', err);
-  }
-}
-
-function getProject(folderId) {
-  const db = readDB();
-  if (!db.projects[folderId]) {
-    db.projects[folderId] = {
-      videos: {},
-      albums: {}
+    const docRef = db.collection('projects').doc(folderId).collection('videos').doc(fileName);
+    const doc = await docRef.get();
+    
+    const video = doc.exists ? doc.data() : { status: 'Waiting for Review', comments: [] };
+    
+    const newComment = {
+      id: Date.now().toString(),
+      timestamp,
+      text: commentText,
+      createdAt: new Date().toISOString()
     };
-    writeDB(db);
+    
+    if (!video.comments) video.comments = [];
+    video.comments.push(newComment);
+    
+    await docRef.set(video, { merge: true });
+    
+    return video.comments;
+  } catch (error) {
+    console.error('Error in addVideoComment:', error);
+    return [];
   }
-  return db.projects[folderId];
 }
 
-function getVideoData(folderId, fileName) {
-  const project = getProject(folderId);
-  if (!project.videos[fileName]) {
-    project.videos[fileName] = {
-      status: 'Waiting for Review',
-      comments: []
-    };
-    const db = readDB();
-    db.projects[folderId] = project;
-    writeDB(db);
+async function updateVideoStatus(folderId, fileName, status) {
+  if (!db) return { status, comments: [] };
+  
+  try {
+    const docRef = db.collection('projects').doc(folderId).collection('videos').doc(fileName);
+    const doc = await docRef.get();
+    
+    const video = doc.exists ? doc.data() : { comments: [] };
+    video.status = status;
+    
+    await docRef.set(video, { merge: true });
+    
+    return video;
+  } catch (error) {
+    console.error('Error in updateVideoStatus:', error);
+    return { status, comments: [] };
   }
-  return project.videos[fileName];
 }
 
-function addVideoComment(folderId, fileName, timestamp, commentText) {
-  const db = readDB();
-  const project = db.projects[folderId] || { videos: {}, albums: {} };
-  const video = project.videos[fileName] || { status: 'Waiting for Review', comments: [] };
+async function getProjectStatus(folderId) {
+  if (!db) return { videos: {}, albums: {} };
   
-  video.comments.push({
-    id: Date.now().toString(),
-    timestamp,
-    text: commentText,
-    createdAt: new Date().toISOString()
-  });
-  
-  project.videos[fileName] = video;
-  db.projects[folderId] = project;
-  writeDB(db);
-  
-  return video.comments;
-}
-
-function updateVideoStatus(folderId, fileName, status) {
-  const db = readDB();
-  const project = db.projects[folderId] || { videos: {}, albums: {} };
-  const video = project.videos[fileName] || { status: 'Waiting for Review', comments: [] };
-  
-  video.status = status;
-  
-  project.videos[fileName] = video;
-  db.projects[folderId] = project;
-  writeDB(db);
-  
-  return video;
-}
-
-function getProjectStatus(folderId) {
-  return getProject(folderId);
+  try {
+    const snapshot = await db.collection('projects').doc(folderId).collection('videos').get();
+    const videos = {};
+    
+    snapshot.forEach(doc => {
+      videos[doc.id] = doc.data();
+    });
+    
+    return { videos, albums: {} };
+  } catch (error) {
+    console.error('Error in getProjectStatus:', error);
+    return { videos: {}, albums: {} };
+  }
 }
 
 module.exports = {
