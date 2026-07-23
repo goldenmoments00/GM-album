@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Oswald:wght@300;400;500;600;700&family=Bebas+Neue&display=swap');
 
 @font-face {
   font-family: 'Breathing';
@@ -9,20 +9,23 @@
 
 :root {
   --color-white: #ffffff;
-  --color-ivory: #fffff0;
+  --color-cream: #F8F3E9;
+  --color-primary: #8b151a;
+  --color-primary-light: #a91b20;
+  --color-primary-dark: #6e1014;
   --color-gold: #c5a059;
-  --color-gold-light: #e4c585;
-  --color-gold-dark: #a38038;
-  --color-bg-main: #0d0d0d;
-  --color-bg-surface: #1a1a1a;
-  --color-text-main: #fcfcfc;
-  --color-text-muted: #a0a0a0;
-  --color-border: rgba(197, 160, 89, 0.2);
+  --color-bg-main: #FDFBF7;
+  --color-bg-surface: #ffffff;
+  --color-text-main: #111111;
+  --color-text-muted: #555555;
+  --color-border: rgba(139, 21, 26, 0.15);
   --color-success: #10b981;
   --color-error: #ef4444;
 
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'Playfair Display', serif;
+  --font-heading: 'Oswald', sans-serif;
+  --font-display: 'Bebas Neue', sans-serif;
 }
 
 * {
@@ -44,7 +47,7 @@ body::-webkit-scrollbar {
 body {
   font-family: var(--font-sans);
   background-color: var(--color-bg-main);
-  background-image: radial-gradient(circle at 50% 0%, #2a2318 0%, #0d0d0d 70%);
+  background-image: none;
   background-attachment: fixed;
   color: var(--color-text-main);
   -webkit-font-smoothing: antialiased;
@@ -56,65 +59,69 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-serif);
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 /* Glassmorphism Utilities */
 .glass-panel {
-  background: rgba(20, 20, 20, 0.6);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--color-border);
-  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5);
-  border-radius: 16px;
+  box-shadow: 0 15px 35px rgba(139, 21, 26, 0.05), 0 5px 15px rgba(0, 0, 0, 0.02);
+  border-radius: 20px;
   transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .glass-panel:hover {
-  border-color: rgba(197, 160, 89, 0.4);
-  box-shadow: 0 15px 50px -10px rgba(0, 0, 0, 0.7), inset 0 0 20px rgba(197, 160, 89, 0.05);
+  border-color: rgba(139, 21, 26, 0.3);
+  box-shadow: 0 20px 40px rgba(139, 21, 26, 0.08), 0 5px 20px rgba(0, 0, 0, 0.03);
 }
 
 /* Buttons */
-.btn-gold {
-  background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 100%);
-  color: #111;
+.btn-primary, .btn-gold {
+  background: var(--color-primary);
+  color: #ffffff;
   border: none;
-  padding: 12px 24px;
-  border-radius: 8px;
+  padding: 12px 32px;
+  border-radius: 9999px;
   font-family: var(--font-sans);
   font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(197, 160, 89, 0.2);
+  box-shadow: 0 8px 20px rgba(139, 21, 26, 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.btn-gold:hover {
-  background-color: var(--color-gold-dark);
+.btn-primary:hover, .btn-gold:hover {
+  background-color: var(--color-primary-light);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(197, 160, 89, 0.4);
-  filter: brightness(1.1);
+  box-shadow: 0 12px 25px rgba(139, 21, 26, 0.35);
 }
 
 .btn-outline {
-  background-color: rgba(255, 255, 255, 0.05);
-  color: var(--color-gold);
-  border: 1px solid var(--color-gold);
-  padding: 12px 24px;
-  border-radius: 8px;
+  background-color: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary);
+  padding: 12px 32px;
+  border-radius: 9999px;
   font-family: var(--font-sans);
-  font-weight: 500;
+  font-weight: 600;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .btn-outline:hover {
-  background-color: var(--color-gold);
-  color: #111;
+  background-color: var(--color-primary);
+  color: #ffffff;
 }
 
 /* Inputs */

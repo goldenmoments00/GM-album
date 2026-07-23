@@ -50,7 +50,7 @@ export default function MobileViewer({ pages, session, fileId }) {
     <div style={{
       width: '100vw',
       height: '100vh',
-      backgroundColor: '#000000',
+      backgroundColor: 'var(--color-cream)',
       overflow: 'hidden',
       position: 'relative',
       display: 'flex',
@@ -79,9 +79,9 @@ export default function MobileViewer({ pages, session, fileId }) {
         </button>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <h2 style={{ fontSize: '1rem', margin: 0, fontWeight: 600 }}>{decodeURIComponent(fileId).replace('.pdf', '')}</h2>
+          <h2 style={{ fontSize: '1rem', margin: 0, fontWeight: 600, color: 'var(--color-primary)' }}>{decodeURIComponent(fileId).replace('.pdf', '')}</h2>
           {mobilePages.length > 0 && (
-            <span style={{ fontSize: '0.75rem', color: 'var(--color-grey-dark)', fontWeight: '500' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: '500' }}>
               {currentPageIndex === 0 
                 ? 'Cover' 
                 : currentPageIndex === mobilePages.length - 1 
@@ -108,9 +108,9 @@ export default function MobileViewer({ pages, session, fileId }) {
             position: 'absolute',
             top: '15px',
             left: '15px',
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            color: 'white',
-            border: 'none',
+            backgroundColor: 'rgba(255,255,255,0.8)',
+            color: 'var(--color-primary)',
+            border: '1px solid var(--color-primary)',
             borderRadius: '50%',
             width: '40px',
             height: '40px',
@@ -181,7 +181,7 @@ export default function MobileViewer({ pages, session, fileId }) {
         padding: '15px',
         gap: '15px',
         zIndex: 10,
-        backgroundColor: 'rgba(0,0,0,0.5)',
+        backgroundColor: 'rgba(255,255,255,0.8)',
         backdropFilter: 'blur(10px)',
         transition: 'transform 0.3s ease, opacity 0.3s ease',
         transform: immersiveMode ? 'translateY(100%)' : 'translateY(0)',
@@ -191,7 +191,7 @@ export default function MobileViewer({ pages, session, fileId }) {
         <button className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'white', flex: 1, justifyContent: 'center' }} onClick={() => setShowFeedback(true)}>
           <MessageSquare size={18} /> Request Changes
         </button>
-        <button className="btn-gold" style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center' }} onClick={handleApprove}>
+        <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center' }} onClick={handleApprove}>
           <Check size={18} /> Approve
         </button>
       </div>

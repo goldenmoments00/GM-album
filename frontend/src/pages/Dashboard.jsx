@@ -44,9 +44,9 @@ export default function Dashboard({ session }) {
   };
 
   return (
-    <div style={{ padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
+    <div className="page-container" style={{ padding: '40px 20px', maxWidth: '1000px', margin: '0 auto', width: '100%' }}>
       <header style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '2.5rem', color: 'var(--color-gold)', marginBottom: '10px' }}>
+        <h1 style={{ fontSize: '3rem', color: 'var(--color-primary)', marginBottom: '10px' }}>
           Project: {albumId}
         </h1>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '1.1rem' }}>
@@ -56,7 +56,7 @@ export default function Dashboard({ session }) {
 
       {/* Progress Overview */}
       <div className="glass-panel" style={{ padding: '20px', marginBottom: '40px' }}>
-        <h3 style={{ marginBottom: '15px', color: 'var(--color-gold)' }}>Progress Overview</h3>
+        <h3 style={{ marginBottom: '15px', color: 'var(--color-primary)' }}>Progress Overview</h3>
         
         {/* Progress Bar */}
         {(() => {
@@ -98,14 +98,14 @@ export default function Dashboard({ session }) {
         <button 
           onClick={() => setIsOverviewExpanded(!isOverviewExpanded)}
           style={{ 
-            background: 'none', border: '1px solid rgba(197, 160, 89, 0.3)', 
+            background: 'none', border: '1px solid rgba(139, 21, 26, 0.3)', 
             padding: '10px 15px', borderRadius: '8px', cursor: 'pointer', 
             display: 'flex', alignItems: 'center', gap: '10px', 
-            fontSize: '0.95rem', color: 'var(--color-gold)', fontWeight: '600', 
+            fontSize: '0.95rem', color: 'var(--color-primary)', fontWeight: '600', 
             width: '100%', justifyContent: 'space-between',
             transition: 'background-color 0.2s ease'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(197, 160, 89, 0.05)'}
+          onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(139, 21, 26, 0.05)'}
           onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
         >
           {isOverviewExpanded ? 'Hide Detailed List' : 'View Detailed List'}
@@ -172,42 +172,42 @@ export default function Dashboard({ session }) {
       </div>
 
       {/* Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '10px', padding: '5px', backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: '12px', width: 'fit-content', margin: '0 auto 30px', boxShadow: 'inset 0 2px 5px rgba(0,0,0,0.2)', border: '1px solid var(--color-border)' }}>
+      <div style={{ display: 'flex', gap: '8px', padding: '8px', backgroundColor: '#ffffff', borderRadius: '9999px', width: 'fit-content', margin: '0 auto 30px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid var(--color-border)' }}>
         <button 
           onClick={() => setActiveTab('albums')}
           style={{ 
-            background: activeTab === 'albums' ? 'var(--color-gold)' : 'transparent', 
-            border: 'none', 
-            padding: '12px 35px', 
+            background: activeTab === 'albums' ? 'rgba(139, 21, 26, 0.05)' : 'transparent', 
+            border: activeTab === 'albums' ? '1px solid var(--color-primary)' : '1px solid transparent', 
+            padding: '10px 24px', 
             cursor: 'pointer', 
-            fontSize: '1.1rem',
-            borderRadius: '8px',
-            color: activeTab === 'albums' ? '#111' : 'var(--color-text-muted)',
-            fontWeight: activeTab === 'albums' ? '600' : '500',
-            boxShadow: activeTab === 'albums' ? '0 2px 10px rgba(197, 160, 89, 0.3)' : 'none',
-            transition: 'all 0.3s ease',
+            fontSize: '1rem',
+            borderRadius: '9999px',
+            color: activeTab === 'albums' ? 'var(--color-primary)' : 'var(--color-primary)',
+            fontWeight: activeTab === 'albums' ? '700' : '600',
+            transition: 'all 0.2s ease',
+            display: 'flex', alignItems: 'center', gap: '8px',
             outline: 'none'
           }}
         >
-          Album Review
+          <BookOpen size={18} /> Albums
         </button>
         <button 
           onClick={() => setActiveTab('videos')}
           style={{ 
-            background: activeTab === 'videos' ? 'var(--color-gold)' : 'transparent', 
-            border: 'none', 
-            padding: '12px 35px', 
+            background: activeTab === 'videos' ? 'rgba(139, 21, 26, 0.05)' : 'transparent', 
+            border: activeTab === 'videos' ? '1px solid var(--color-primary)' : '1px solid transparent', 
+            padding: '10px 24px', 
             cursor: 'pointer', 
-            fontSize: '1.1rem',
-            borderRadius: '8px',
-            color: activeTab === 'videos' ? '#111' : 'var(--color-text-muted)',
-            fontWeight: activeTab === 'videos' ? '600' : '500',
-            boxShadow: activeTab === 'videos' ? '0 2px 10px rgba(197, 160, 89, 0.3)' : 'none',
-            transition: 'all 0.3s ease',
+            fontSize: '1rem',
+            borderRadius: '9999px',
+            color: activeTab === 'videos' ? 'var(--color-primary)' : 'var(--color-primary)',
+            fontWeight: activeTab === 'videos' ? '700' : '600',
+            transition: 'all 0.2s ease',
+            display: 'flex', alignItems: 'center', gap: '8px',
             outline: 'none'
           }}
         >
-          Video Review
+          <Film size={18} /> Videos
         </button>
       </div>
 
@@ -229,8 +229,8 @@ export default function Dashboard({ session }) {
           }}>
             <AlbumThumbnail folderId={folderId} fileName={album.file} />
             <h3 style={{ fontSize: '1.4rem', marginBottom: '15px' }}>{album.title}</h3>
-            <button className="btn-gold" onClick={() => handleOpenAlbum(album.file)} style={{ width: '100%' }}>
-              Open Flipbook
+            <button className="btn-primary" onClick={() => handleOpenAlbum(album.file)} style={{ width: '100%' }}>
+              Open Album
             </button>
           </div>
         ))}
@@ -298,7 +298,7 @@ export default function Dashboard({ session }) {
               <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '5px', justifyContent: 'center' }}>
                 {getStatusIcon(status)} {status}
               </p>
-              <button className="btn-gold" onClick={() => handleOpenVideo(video.file)} style={{ width: '100%' }}>
+              <button className="btn-primary" onClick={() => handleOpenVideo(video.file)} style={{ width: '100%' }}>
                 Review Video
               </button>
             </div>

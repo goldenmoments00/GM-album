@@ -117,7 +117,7 @@ export default function VideoPlayerPage({ session }) {
           <button className="btn-outline" onClick={() => updateStatus('Needs Changes')} style={{ display: 'flex', gap: '5px', alignItems: 'center', whiteSpace: 'nowrap' }}>
             <AlertCircle size={16} /> Needs Changes
           </button>
-          <button className="btn-gold" onClick={() => updateStatus('Approved')} style={{ display: 'flex', gap: '5px', alignItems: 'center', whiteSpace: 'nowrap' }}>
+          <button className="btn-primary" onClick={() => updateStatus('Approved')} style={{ display: 'flex', gap: '5px', alignItems: 'center', whiteSpace: 'nowrap' }}>
             <Check size={16} /> Approve Video
           </button>
         </div>
@@ -140,7 +140,7 @@ export default function VideoPlayerPage({ session }) {
         {/* Comment Input */}
         <div className="glass-panel" style={{ padding: '20px', marginTop: '20px' }}>
           <h3 style={{ marginBottom: '15px' }}>Add Feedback</h3>
-          <p style={{ fontSize: '0.9rem', color: 'var(--color-grey-dark)', marginBottom: '10px' }}>
+          <p style={{ fontSize: '0.9rem', color: 'var(--color-text-muted)', marginBottom: '10px' }}>
             Pause the video where you'd like to leave a comment. Current Timestamp: <strong>{formatTime(currentTimestamp)}</strong>
           </p>
           <form onSubmit={handleAddComment} style={{ display: 'flex', gap: '10px' }}>
@@ -157,7 +157,7 @@ export default function VideoPlayerPage({ session }) {
               }}
               style={{ flex: 1 }}
             />
-            <button type="submit" className="btn-gold" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <button type="submit" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <Send size={16} /> Send
             </button>
           </form>
@@ -172,7 +172,7 @@ export default function VideoPlayerPage({ session }) {
             {videoData.comments.length > 0 && (
               <button 
                 onClick={handleShare}
-                style={{ background: copied ? 'var(--color-gold)' : (isMobile ? '#25D366' : 'var(--color-grey-dark)'), color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}
+                style={{ background: copied ? 'var(--color-primary)' : (isMobile ? '#25D366' : 'var(--color-text-muted)'), color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 'bold' }}
               >
                 {copied ? 'Copied!' : (isMobile ? 'Send via WhatsApp' : 'Copy Feedback')}
               </button>
@@ -181,18 +181,18 @@ export default function VideoPlayerPage({ session }) {
           
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
             {videoData.comments.length === 0 ? (
-              <p style={{ color: 'var(--color-grey-dark)', textAlign: 'center', marginTop: '20px' }}>No comments yet.</p>
+              <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', marginTop: '20px' }}>No comments yet.</p>
             ) : (
               videoData.comments.map(comment => (
-                <div key={comment.id} style={{ padding: '15px', backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: '8px', borderLeft: '3px solid var(--color-gold)' }}>
+                <div key={comment.id} style={{ padding: '15px', backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: '8px', borderLeft: '3px solid var(--color-primary)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
                     <button 
                       onClick={() => seekTo(comment.timestamp)}
-                      style={{ background: 'var(--color-gold)', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                      style={{ background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
                     >
                       {formatTime(comment.timestamp)}
                     </button>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-grey-dark)' }}>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
                       {new Date(comment.createdAt).toLocaleDateString()}
                     </span>
                   </div>

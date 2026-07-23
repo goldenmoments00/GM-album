@@ -291,10 +291,8 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
   const containerStyle = {
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: '#1a120b',
-    backgroundImage: 'radial-gradient(circle at 15% 15%, rgba(255, 240, 210, 0.25) 0%, rgba(0, 0, 0, 0.5) 45%, rgba(0, 0, 0, 0.85) 100%), url("/wood-bg.jpg")',
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
+    backgroundColor: 'var(--color-cream)',
+    backgroundImage: 'none',
     overflow: 'hidden',
     touchAction: 'none',
     zIndex: 0,
@@ -339,7 +337,7 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
         position: 'absolute',
         top: 0, left: 0, right: 0,
         height: '70px',
-        background: 'linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)',
+        background: 'linear-gradient(to bottom, rgba(248, 243, 233, 0.9) 0%, rgba(248, 243, 233, 0) 100%)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -350,18 +348,18 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
         opacity: immersiveMode ? 0 : 1,
         pointerEvents: immersiveMode ? 'none' : 'auto'
       }}>
-        <button className="btn-outline" style={{ padding: '8px 16px', display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', backdropFilter: 'blur(8px)', borderRadius: '20px' }} onClick={() => navigate('/dashboard')}>
+        <button className="btn-outline" style={{ padding: '8px 16px', display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', backdropFilter: 'blur(8px)', borderRadius: '9999px' }} onClick={() => navigate('/dashboard')}>
           <ArrowLeft size={16} /> Back
         </button>
 
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'rgba(255,255,255,0.9)', color: '#333', border: 'none', padding: '8px 16px', borderRadius: '20px', cursor: 'pointer', fontWeight: '500' }} onClick={() => setShowFeedback(true)}>
+          <button style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#ffffff', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', padding: '8px 16px', borderRadius: '9999px', cursor: 'pointer', fontWeight: '500' }} onClick={() => setShowFeedback(true)}>
             <MessageSquare size={18} /> Request Changes
           </button>
-          <button className="btn-gold" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '20px', border: 'none' }} onClick={handleApprove}>
+          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '9999px', border: 'none' }} onClick={handleApprove}>
             <Check size={18} /> Approve Album
           </button>
-          <button style={{ padding: '8px', color: '#fff', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={toggleFullscreen} title="Toggle Fullscreen">
+          <button style={{ padding: '8px', color: 'var(--color-primary)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={toggleFullscreen} title="Toggle Fullscreen">
             <Maximize size={18} />
           </button>
         </div>
@@ -416,11 +414,11 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           <span style={{
             fontFamily: "'Breathing', cursive",
             fontSize: 'clamp(2.2rem, 3.8vw, 3.2rem)',
-            color: '#ffffff',
-            mixBlendMode: 'overlay',
+            color: 'var(--color-primary)',
+            mixBlendMode: 'normal',
             textTransform: 'capitalize',
             marginBottom: '0px',
-            textShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            textShadow: '0 2px 8px rgba(139, 21, 26, 0.1)',
             lineHeight: 1.1
           }}>
             {decodeURIComponent(fileId).replace('.pdf', '')}
@@ -428,14 +426,14 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           <span style={{
             fontFamily: "'Inter', sans-serif",
             fontSize: 'clamp(0.8rem, 1.1vw, 0.95rem)',
-            color: '#ffffff',
-            mixBlendMode: 'overlay',
-            fontWeight: 300,
+            color: 'var(--color-primary)',
+            mixBlendMode: 'normal',
+            fontWeight: 400,
             letterSpacing: '1.5px',
             textAlign: 'center',
             padding: '0 20px',
             marginTop: '2px',
-            textShadow: '0 2px 8px rgba(0,0,0,0.4)'
+            textShadow: 'none'
           }}>
             {randomQuote}
           </span>
@@ -481,8 +479,8 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
               <span style={{
                 fontFamily: "'Breathing', cursive",
                 fontSize: '8rem',
-                color: '#ffffff',
-                mixBlendMode: 'overlay',
+                color: 'var(--color-primary)',
+                mixBlendMode: 'normal',
                 transform: 'rotate(-5deg)'
               }}>Thank You</span>
             </div>
@@ -593,19 +591,19 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
             bottom: '30px',
             right: '20px',
             padding: '12px 20px',
-            borderRadius: '30px',
-            backgroundColor: 'rgba(20, 20, 20, 0.75)',
+            borderRadius: '9999px',
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,0.2)',
+            border: '1px solid var(--color-primary)',
             display: 'flex',
             gap: '8px',
             alignItems: 'center',
-            color: 'white',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+            color: 'var(--color-primary)',
+            boxShadow: '0 8px 32px rgba(139, 21, 26, 0.15)',
             zIndex: 50,
             cursor: 'pointer',
-            fontWeight: '500',
+            fontWeight: '600',
             fontSize: '0.9rem'
           }}
         >
