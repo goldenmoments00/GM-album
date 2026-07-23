@@ -53,9 +53,10 @@ export default function Dashboard({ session }) {
       <button 
         onClick={handleLogout}
         className="btn-outline"
-        style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', gap: '5px', padding: '6px 14px', fontSize: '0.85rem' }}
+        style={{ position: 'absolute', top: '20px', right: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10px', borderRadius: '50%' }}
+        title="Logout"
       >
-        <LogOut size={16} /> Logout
+        <LogOut size={18} />
       </button>
 
       <header style={{ textAlign: 'center', marginBottom: '40px', marginTop: '20px' }}>
