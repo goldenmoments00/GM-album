@@ -32,7 +32,8 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
         })
       });
 
-      const text = `*Feedback for Album: ${fileId.replace(/\.pdf$/i, '')}*\nPages: ${pages}\n\nNotes:\n${comment}`;
+      const cleanFileId = fileId.replace(/\.pdf$/i, '');
+      const text = `Review has been placed for Project: ${folderId} - File: ${cleanFileId}. Kindly check.`;
 
       if (isMobile) {
         // Hide modal temporarily for screenshot

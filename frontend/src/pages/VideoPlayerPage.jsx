@@ -205,11 +205,8 @@ export default function VideoPlayerPage({ session }) {
   const handleShare = () => {
     if (videoData.comments.length === 0) return;
     
-    let text = `*Feedback for Video: ${fileId.replace(/\.[^/.]+$/, '')}*\n\n`;
-    videoData.comments.forEach(c => {
-      text += `[${formatTime(c.timestamp)}] ${c.text}\n`;
-    });
-    text += `\nStatus: ${videoData.status}`;
+    const cleanFileId = fileId.replace(/\.[^/.]+$/, '');
+    const text = `Review has been placed for Project: ${folderId} - File: ${cleanFileId}. Kindly check.`;
     
     if (isMobile) {
       const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
