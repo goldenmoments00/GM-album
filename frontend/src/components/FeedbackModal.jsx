@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Send } from 'lucide-react';
+import html2canvas from 'html2canvas';
 
 export default function FeedbackModal({ onClose, totalPages, folderId, fileId }) {
   const [pages, setPages] = useState('');
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  
+  const modalRef = useRef(null);
   
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -32,10 +35,42 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
       const text = `*Feedback for Album: ${fileId.replace(/\.pdf$/i, '')}*\nPages: ${pages}\n\nNotes:\n${comment}`;
 
       if (isMobile) {
+        // Hide modal temporarily for screenshot
+        if (modalRef.current) {
+          modalRef.current.style.opacity = '0';
+        }
+        
+        // Wait for rendering to update
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        try {
+          const canvas = await html2canvas(document.body, { useCORS: true, logging: false });
+          const dataUrl = canvas.toDataURL('image/png', 1.0);
+          
+          // Download image
+          const link = document.createElement('a');
+          const filename = `Album_Changes_${fileId.replace(/\.pdf$/i, '')}.png`;
+          link.download = filename;
+          link.href = dataUrl;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } catch (e) {
+          console.error("Screenshot failed", e);
+        }
+        
+        // Show modal again
+        if (modalRef.current) {
+          modalRef.current.style.opacity = '1';
+        }
+
         const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-        window.open(url, '_blank');
-        setSuccess(true);
-        setTimeout(() => onClose(), 2000);
+        
+        setTimeout(() => {
+          window.location.href = url;
+          setSuccess(true);
+          setTimeout(() => onClose(), 2000);
+        }, 400);
       } else {
         navigator.clipboard.writeText(text).then(() => {
           setSuccess(true);
@@ -51,7 +86,9 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
   };
 
   return (
-    <div style={{
+    <div 
+      ref={modalRef}
+      style={{
       position: 'fixed',
       top: 0, left: 0, right: 0, bottom: 0,
       backgroundColor: 'rgba(0,0,0,0.5)',
