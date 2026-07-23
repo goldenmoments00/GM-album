@@ -163,6 +163,19 @@ router.post('/video/comment', async (req, res) => {
 });
 
 /**
+ * DELETE /api/video/comment
+ */
+router.delete('/video/comment', async (req, res) => {
+  try {
+    const { folderId, fileId, commentId } = req.body;
+    const comments = await dbService.deleteVideoComment(folderId, fileId, commentId);
+    res.json({ success: true, comments });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to delete comment' });
+  }
+});
+
+/**
  * POST /api/video/status
  */
 router.post('/video/status', async (req, res) => {

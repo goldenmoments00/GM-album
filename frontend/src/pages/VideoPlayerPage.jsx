@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import CustomVideoPlayer from '../components/CustomVideoPlayer';
-import { ArrowLeft, Send, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Send, Check, AlertCircle, Trash2 } from 'lucide-react';
 
 export default function VideoPlayerPage({ session }) {
   const { fileId } = useParams();
@@ -66,6 +66,27 @@ export default function VideoPlayerPage({ session }) {
       console.error('Failed to add comment', err);
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) return;
+    
+    try {
+      const response = await fetch('/api/video/comment', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderId, fileId, commentId })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setVideoData(prev => ({
+          ...prev,
+          comments: prev.comments.filter(c => c.id !== commentId)
+        }));
+      }
+    } catch (err) {
+      console.error('Failed to delete comment', err);
     }
   };
 
@@ -198,18 +219,36 @@ export default function VideoPlayerPage({ session }) {
             {videoData.comments.length === 0 ? (
               <p style={{ color: 'var(--color-text-muted)', textAlign: 'center', marginTop: '20px' }}>No comments yet.</p>
             ) : (
-              videoData.comments.map(comment => (
-                <div key={comment.id} style={{ padding: '15px', backgroundColor: 'rgba(255,255,255,0.6)', borderRadius: '8px', borderLeft: '3px solid var(--color-primary)' }}>
+              videoData.comments.map((comment, index) => (
+                <div key={comment.id} style={{ 
+                  padding: '15px', 
+                  backgroundColor: 'rgba(255,255,255,0.6)', 
+                  borderRadius: '8px', 
+                  borderLeft: '3px solid var(--color-primary)',
+                  borderBottom: index !== videoData.comments.length - 1 ? '1px solid rgba(0,0,0,0.1)' : 'none',
+                  marginBottom: '10px'
+                }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <button 
-                      onClick={() => seekTo(comment.timestamp)}
-                      style={{ background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
-                    >
-                      {formatTime(comment.timestamp)}
-                    </button>
-                    <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
-                      {new Date(comment.createdAt).toLocaleDateString()}
-                    </span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <button 
+                        onClick={() => seekTo(comment.timestamp)}
+                        style={{ background: 'var(--color-primary)', color: 'white', border: 'none', borderRadius: '4px', padding: '2px 8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 'bold' }}
+                      >
+                        {formatTime(comment.timestamp)}
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)' }}>
+                        {new Date(comment.createdAt).toLocaleDateString()}
+                      </span>
+                      <button 
+                        onClick={() => handleDeleteComment(comment.id)}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                        title="Delete Feedback"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                   <p style={{ fontSize: '0.95rem' }}>{comment.text}</p>
                 </div>

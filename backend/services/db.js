@@ -52,6 +52,29 @@ async function addVideoComment(folderId, fileName, timestamp, commentText) {
   }
 }
 
+async function deleteVideoComment(folderId, fileName, commentId) {
+  if (!db) return [];
+  
+  try {
+    const docRef = doc(db, 'projects', folderId, 'videos', fileName);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) return [];
+    
+    const video = docSnap.data();
+    if (!video.comments) return [];
+    
+    video.comments = video.comments.filter(c => c.id !== commentId);
+    
+    await setDoc(docRef, video, { merge: true });
+    
+    return video.comments;
+  } catch (error) {
+    console.error('Error in deleteVideoComment:', error);
+    return [];
+  }
+}
+
 async function updateVideoStatus(folderId, fileName, status) {
   if (!db) return { status, comments: [] };
   
@@ -93,6 +116,7 @@ async function getProjectStatus(folderId) {
 module.exports = {
   getVideoData,
   addVideoComment,
+  deleteVideoComment,
   updateVideoStatus,
   getProjectStatus
 };
