@@ -484,7 +484,7 @@ export default function MobileAnnotationEditor({
           background: 'var(--color-gold)', border: 'none', color: '#1a120b', 
           padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', display: 'flex', gap: '5px', alignItems: 'center', fontSize: '0.85rem'
         }}>
-          <MessageSquare size={14} /> Send
+          <MessageSquare size={14} /> Save & Share
         </button>
       </div>
 

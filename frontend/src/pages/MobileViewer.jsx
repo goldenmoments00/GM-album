@@ -94,6 +94,36 @@ export default function MobileViewer({ pages, session, fileId }) {
         <div style={{ width: '60px' }}></div> {/* Spacer to center title */}
       </div>
 
+      {/* Floating Back Button for Immersive Mode */}
+      {immersiveMode && (
+        <button 
+          onClick={() => {
+            if (document.fullscreenElement) {
+              document.exitFullscreen().catch(console.error);
+            }
+            setImmersiveMode(false);
+            navigate('/dashboard');
+          }}
+          style={{
+            position: 'absolute',
+            top: '15px',
+            left: '15px',
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 20
+          }}
+        >
+          <ArrowLeft size={20} />
+        </button>
+      )}
+
       {/* Swipeable Gallery */}
       <div 
         ref={scrollContainerRef}

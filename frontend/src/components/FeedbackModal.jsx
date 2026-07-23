@@ -144,7 +144,7 @@ export default function FeedbackModal({ onClose, totalPages, folderId, fileId })
             </div>
 
             <button type="submit" className="btn-gold" disabled={submitting} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-              <Send size={18} /> {submitting ? 'Processing...' : (isMobile ? 'Send via WhatsApp' : 'Copy to Clipboard')}
+              <Send size={18} /> {submitting ? 'Processing...' : (isMobile ? 'Save & Share' : 'Copy to Clipboard')}
             </button>
           </form>
         )}
