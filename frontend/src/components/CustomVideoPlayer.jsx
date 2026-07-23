@@ -14,14 +14,17 @@ export default function CustomVideoPlayer({ src, onPause, forwardedRef }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [isBuffering, setIsBuffering] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
 
     const handleTimeUpdate = () => {
-      setProgress((video.currentTime / video.duration) * 100);
-      setCurrentTime(video.currentTime);
+      if (!isDragging) {
+        setProgress((video.currentTime / video.duration) * 100 || 0);
+        setCurrentTime(video.currentTime);
+      }
     };
 
     const handleLoadedMetadata = () => {
@@ -73,7 +76,7 @@ export default function CustomVideoPlayer({ src, onPause, forwardedRef }) {
       video.removeEventListener('playing', handlePlaying);
       video.removeEventListener('progress', handleProgress);
     };
-  }, [videoRef, onPause]);
+  }, [videoRef, onPause, isDragging]);
 
   const togglePlay = () => {
     if (videoRef.current.paused) {
@@ -83,10 +86,20 @@ export default function CustomVideoPlayer({ src, onPause, forwardedRef }) {
     }
   };
 
-  const handleSeek = (e) => {
-    const seekTime = (e.target.value / 100) * videoRef.current.duration;
-    videoRef.current.currentTime = seekTime;
-    setProgress(e.target.value);
+  const handleSeekChange = (e) => {
+    const newProgress = parseFloat(e.target.value);
+    setProgress(newProgress);
+    const seekTime = (newProgress / 100) * duration;
+    setCurrentTime(seekTime);
+  };
+
+  const handleSeekEnd = (e) => {
+    setIsDragging(false);
+    const newProgress = parseFloat(e.target.value);
+    const seekTime = (newProgress / 100) * duration;
+    if (isFinite(seekTime)) {
+      videoRef.current.currentTime = seekTime;
+    }
   };
 
   const handleVolumeChange = (e) => {
@@ -146,7 +159,28 @@ export default function CustomVideoPlayer({ src, onPause, forwardedRef }) {
       }}
       onContextMenu={(e) => e.preventDefault()} // Prevent right-click to save
     >
-      <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .custom-range-slider::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #fff;
+          cursor: pointer;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+        .custom-range-slider::-moz-range-thumb {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #fff;
+          cursor: pointer;
+          border: none;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+      `}</style>
       
       {/* Loading & Buffering Overlay */}
       {isBuffering && (
@@ -199,9 +233,21 @@ export default function CustomVideoPlayer({ src, onPause, forwardedRef }) {
           type="range" 
           min="0" 
           max="100" 
+          step="0.1"
           value={progress || 0} 
-          onChange={handleSeek}
-          style={{ width: '100%', cursor: 'pointer' }}
+          onPointerDown={() => setIsDragging(true)}
+          onChange={handleSeekChange}
+          onPointerUp={handleSeekEnd}
+          style={{ 
+            width: '100%', 
+            cursor: 'pointer',
+            height: '6px',
+            borderRadius: '3px',
+            WebkitAppearance: 'none',
+            appearance: 'none',
+            background: `linear-gradient(to right, var(--color-gold) ${progress || 0}%, rgba(255,255,255,0.3) ${progress || 0}%)`
+          }}
+          className="custom-range-slider"
         />
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
