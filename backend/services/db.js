@@ -1,4 +1,5 @@
 const { db } = require('./firebase');
+const { doc, getDoc, setDoc, collection, getDocs } = require('firebase/firestore');
 
 async function getVideoData(folderId, fileName) {
   if (!db) {
@@ -7,16 +8,16 @@ async function getVideoData(folderId, fileName) {
   }
   
   try {
-    const docRef = db.collection('projects').doc(folderId).collection('videos').doc(fileName);
-    const doc = await docRef.get();
+    const docRef = doc(db, 'projects', folderId, 'videos', fileName);
+    const docSnap = await getDoc(docRef);
     
-    if (!doc.exists) {
+    if (!docSnap.exists()) {
       const newData = { status: 'Waiting for Review', comments: [] };
-      await docRef.set(newData);
+      await setDoc(docRef, newData);
       return newData;
     }
     
-    return doc.data();
+    return docSnap.data();
   } catch (error) {
     console.error('Error in getVideoData:', error);
     return { status: 'Waiting for Review', comments: [] };
@@ -27,10 +28,10 @@ async function addVideoComment(folderId, fileName, timestamp, commentText) {
   if (!db) return [];
   
   try {
-    const docRef = db.collection('projects').doc(folderId).collection('videos').doc(fileName);
-    const doc = await docRef.get();
+    const docRef = doc(db, 'projects', folderId, 'videos', fileName);
+    const docSnap = await getDoc(docRef);
     
-    const video = doc.exists ? doc.data() : { status: 'Waiting for Review', comments: [] };
+    const video = docSnap.exists() ? docSnap.data() : { status: 'Waiting for Review', comments: [] };
     
     const newComment = {
       id: Date.now().toString(),
@@ -42,7 +43,7 @@ async function addVideoComment(folderId, fileName, timestamp, commentText) {
     if (!video.comments) video.comments = [];
     video.comments.push(newComment);
     
-    await docRef.set(video, { merge: true });
+    await setDoc(docRef, video, { merge: true });
     
     return video.comments;
   } catch (error) {
@@ -55,13 +56,13 @@ async function updateVideoStatus(folderId, fileName, status) {
   if (!db) return { status, comments: [] };
   
   try {
-    const docRef = db.collection('projects').doc(folderId).collection('videos').doc(fileName);
-    const doc = await docRef.get();
+    const docRef = doc(db, 'projects', folderId, 'videos', fileName);
+    const docSnap = await getDoc(docRef);
     
-    const video = doc.exists ? doc.data() : { comments: [] };
+    const video = docSnap.exists() ? docSnap.data() : { comments: [] };
     video.status = status;
     
-    await docRef.set(video, { merge: true });
+    await setDoc(docRef, video, { merge: true });
     
     return video;
   } catch (error) {
@@ -74,11 +75,12 @@ async function getProjectStatus(folderId) {
   if (!db) return { videos: {}, albums: {} };
   
   try {
-    const snapshot = await db.collection('projects').doc(folderId).collection('videos').get();
+    const collRef = collection(db, 'projects', folderId, 'videos');
+    const snapshot = await getDocs(collRef);
     const videos = {};
     
-    snapshot.forEach(doc => {
-      videos[doc.id] = doc.data();
+    snapshot.forEach(docSnap => {
+      videos[docSnap.id] = docSnap.data();
     });
     
     return { videos, albums: {} };

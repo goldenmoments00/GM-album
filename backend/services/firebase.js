@@ -1,36 +1,17 @@
-const admin = require('firebase-admin');
-const path = require('path');
-const fs = require('fs');
+const { initializeApp } = require("firebase/app");
+const { getFirestore } = require("firebase/firestore");
 
-let db = null;
+const firebaseConfig = {
+  apiKey: "AIzaSyBQ650Ej4YZvL5nD5TL6jxaKQkBHrO3VOo",
+  authDomain: "prevew-clint-data.firebaseapp.com",
+  projectId: "prevew-clint-data",
+  storageBucket: "prevew-clint-data.firebasestorage.app",
+  messagingSenderId: "1023683734873",
+  appId: "1:1023683734873:web:fbecab11a80addb3733048",
+  measurementId: "G-WCPFWM27JQ"
+};
 
-try {
-  // Allow user to use FIREBASE_CREDENTIALS_JSON string in Vercel
-  if (process.env.FIREBASE_CREDENTIALS_JSON) {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_CREDENTIALS_JSON);
-    admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount)
-    });
-    console.log('[Firebase] Initialized with FIREBASE_CREDENTIALS_JSON');
-  } else {
-    // Fallback to local JSON file
-    const serviceAccountPath = path.join(__dirname, '../firebase-key.json');
-    if (fs.existsSync(serviceAccountPath)) {
-      const serviceAccount = require(serviceAccountPath);
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount)
-      });
-      console.log('[Firebase] Initialized with local firebase-key.json');
-    } else {
-      console.warn('[Firebase] Warning: firebase-key.json not found and FIREBASE_CREDENTIALS_JSON not set. Firestore will not work.');
-    }
-  }
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
-  if (admin.apps.length > 0) {
-    db = admin.firestore();
-  }
-} catch (error) {
-  console.error('[Firebase] Initialization error:', error);
-}
-
-module.exports = { db, admin };
+module.exports = { db };
