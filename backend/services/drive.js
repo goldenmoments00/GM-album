@@ -25,43 +25,35 @@ for (const p of possibleEnvPaths) {
   }
 }
 
-// Resolve service-account.json key path
-const possibleKeyPaths = [
-  path.join(__dirname, '../service-account.json'),
-  path.join(process.cwd(), 'backend/service-account.json'),
-  path.join(process.cwd(), 'service-account.json')
-];
+// Initialize OAuth2 Client
+let driveApi = null;
+let auth = null;
 
-for (const kp of possibleKeyPaths) {
-  if (fs.existsSync(kp)) {
-    process.env.GOOGLE_APPLICATION_CREDENTIALS = kp;
-    break;
+try {
+  const credentialsPath = path.join(__dirname, '../credentials.json');
+  const tokenPath = path.join(__dirname, '../token.json');
+
+  if (fs.existsSync(credentialsPath) && fs.existsSync(tokenPath)) {
+    console.log('[GoogleDrive Init] Loading OAuth2 credentials from', credentialsPath);
+    const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
+    const { client_secret, client_id, redirect_uris } = credentials.installed;
+    const oAuth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+    
+    const token = JSON.parse(fs.readFileSync(tokenPath, 'utf8'));
+    oAuth2Client.setCredentials(token);
+    auth = oAuth2Client;
+    driveApi = google.drive({ version: 'v3', auth });
+    console.log('[GoogleDrive Init] OAuth2 Client successfully initialized!');
+  } else {
+    console.error('[GoogleDrive Init] ERROR: credentials.json or token.json is missing in backend directory.');
   }
+} catch (err) {
+  console.error('[GoogleDrive Init] Failed to initialize OAuth2 client:', err);
 }
 
-// Force Drive API initialization and completely remove mock fallback
 const useMock = false;
 const MOCK_DRIVE_PATH = '';
 
-let driveApi = null;
-let authOptions = {
-  scopes: ['https://www.googleapis.com/auth/drive.readonly'],
-};
-
-if (process.env.GOOGLE_CREDENTIALS_JSON) {
-  try {
-    authOptions.credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS_JSON);
-    console.log('[GoogleDrive Init] Using GOOGLE_CREDENTIALS_JSON string');
-  } catch (e) {
-    console.error('[GoogleDrive Init] Failed to parse GOOGLE_CREDENTIALS_JSON');
-  }
-} else {
-  authOptions.keyFile = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-  console.log('[GoogleDrive Init] Using keyFile path:', authOptions.keyFile);
-}
-
-const auth = new google.auth.GoogleAuth(authOptions);
-driveApi = google.drive({ version: 'v3', auth });
 
 const getDriveRoot = () => {
   const root = process.env.DRIVE_ROOT_FOLDER_ID;
@@ -379,10 +371,177 @@ async function streamVideo(folderId, fileName, res, rangeHeader) {
   }
 }
 
+const { Readable } = require('stream');
+const bufferToStream = (buffer) => {
+  const stream = new Readable();
+  stream.push(buffer);
+  stream.push(null);
+  return stream;
+};
+
+async function findOrCreateReviewsFolder(parentFolderId) {
+  try {
+    const query = `name = 'Reviews' and '${parentFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+    const searchRes = await driveApi.files.list({ q: query, fields: 'files(id, name)' });
+    
+    if (searchRes.data.files.length > 0) {
+      return searchRes.data.files[0].id;
+    }
+
+    const fileMetadata = {
+      name: 'Reviews',
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [parentFolderId]
+    };
+    const folder = await driveApi.files.create({
+      resource: fileMetadata,
+      fields: 'id',
+      supportsAllDrives: true
+    });
+    return folder.data.id;
+  } catch (error) {
+    console.error('Error finding/creating Reviews folder:', error);
+    throw error;
+  }
+}
+
+async function createNewReviewFolder(reviewsFolderId) {
+  try {
+    const query = `'${reviewsFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and name contains 'Review-' and trashed = false`;
+    const searchRes = await driveApi.files.list({ q: query, fields: 'files(name)' });
+    
+    let nextNum = 1;
+    if (searchRes.data.files.length > 0) {
+      const nums = searchRes.data.files.map(f => {
+        const match = f.name.match(/Review-(\d+)/);
+        return match ? parseInt(match[1]) : 0;
+      });
+      nextNum = Math.max(...nums) + 1;
+    }
+    
+    const folderName = `Review-${String(nextNum).padStart(3, '0')}`;
+    
+    const fileMetadata = {
+      name: folderName,
+      mimeType: 'application/vnd.google-apps.folder',
+      parents: [reviewsFolderId]
+    };
+    const folder = await driveApi.files.create({
+      resource: fileMetadata,
+      fields: 'id',
+      supportsAllDrives: true
+    });
+    return { folderId: folder.data.id, reviewNumber: nextNum, folderName };
+  } catch (error) {
+    console.error('Error creating new Review folder:', error);
+    throw error;
+  }
+}
+
+async function uploadReviewAssets(targetFolderId, screenshotBuffer, voiceBuffer) {
+  try {
+    let screenshotResult = null;
+    if (screenshotBuffer) {
+      const media = {
+        mimeType: 'image/png',
+        body: bufferToStream(screenshotBuffer)
+      };
+      const fileMetadata = {
+        name: 'screenshot.png',
+        parents: [targetFolderId]
+      };
+      const file = await driveApi.files.create({
+        resource: fileMetadata,
+        media: media,
+        fields: 'id, webViewLink',
+        supportsAllDrives: true
+      });
+      // Share file publicly so it can be viewed directly
+      await driveApi.permissions.create({
+        fileId: file.data.id,
+        resource: { role: 'reader', type: 'anyone' }
+      });
+      screenshotResult = file.data;
+    }
+
+    let voiceResult = null;
+    if (voiceBuffer) {
+      const media = {
+        mimeType: 'audio/webm', 
+        body: bufferToStream(voiceBuffer)
+      };
+      const fileMetadata = {
+        name: 'voice.webm',
+        parents: [targetFolderId]
+      };
+      const file = await driveApi.files.create({
+        resource: fileMetadata,
+        media: media,
+        fields: 'id, webViewLink',
+        supportsAllDrives: true
+      });
+      // Share file publicly
+      await driveApi.permissions.create({
+        fileId: file.data.id,
+        resource: { role: 'reader', type: 'anyone' }
+      });
+      voiceResult = file.data;
+    }
+
+    return { screenshot: screenshotResult, voice: voiceResult };
+  } catch (error) {
+    console.error('Error uploading review assets:', error);
+    throw error;
+  }
+}
+
+async function streamFileById(fileId, res, rangeHeader) {
+  try {
+    const requestHeaders = {};
+    if (rangeHeader) {
+      requestHeaders['Range'] = rangeHeader;
+    }
+
+    const fileRes = await driveApi.files.get(
+      { fileId: fileId, alt: 'media' },
+      { headers: requestHeaders, responseType: 'stream' }
+    );
+
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    if (fileRes.headers['content-type']) {
+      res.setHeader('Content-Type', fileRes.headers['content-type']);
+    }
+    if (fileRes.headers['content-range']) {
+      res.status(206);
+      res.setHeader('Content-Range', fileRes.headers['content-range']);
+    }
+    if (fileRes.headers['content-length']) {
+      res.setHeader('Content-Length', fileRes.headers['content-length']);
+    }
+
+    fileRes.data
+      .on('end', () => {})
+      .on('error', (err) => {
+        console.error('Error downloading file:', err);
+        if (!res.headersSent) res.status(500).send('Error downloading file');
+      })
+      .pipe(res);
+
+  } catch (error) {
+    console.error('Error streaming file by id:', error);
+    if (!res.headersSent) res.status(500).json({ error: 'Failed to stream file' });
+  }
+}
+
 module.exports = {
   findFolderByName,
   getAlbumsInFolder,
   streamPdf,
   getVideosInFolder,
-  streamVideo
+  streamVideo,
+  findOrCreateReviewsFolder,
+  createNewReviewFolder,
+  uploadReviewAssets,
+  streamFileById
 };

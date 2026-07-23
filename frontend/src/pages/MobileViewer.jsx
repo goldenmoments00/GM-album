@@ -189,7 +189,7 @@ export default function MobileViewer({ pages, session, fileId }) {
         pointerEvents: immersiveMode ? 'none' : 'auto'
       }}>
         <button className="btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'white', flex: 1, justifyContent: 'center' }} onClick={() => setShowFeedback(true)}>
-          <MessageSquare size={18} /> Request Changes
+          <MessageSquare size={18} /> Suggest Changes
         </button>
         <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, justifyContent: 'center' }} onClick={handleApprove}>
           <Check size={18} /> Approve

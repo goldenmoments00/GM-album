@@ -350,19 +350,27 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
         opacity: immersiveMode ? 0 : 1,
         pointerEvents: immersiveMode ? 'none' : 'auto'
       }}>
-        <button className="btn-outline" style={{ padding: '8px 16px', display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', backdropFilter: 'blur(8px)', borderRadius: '9999px' }} onClick={() => navigate('/dashboard')}>
-          <ArrowLeft size={16} /> Back
-        </button>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexShrink: 0 }}>
+          <button className="btn-outline" style={{ padding: '8px 16px', display: 'flex', gap: '8px', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.7)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', backdropFilter: 'blur(8px)', borderRadius: '9999px' }} onClick={() => navigate('/dashboard')}>
+            <ArrowLeft size={16} /> Back
+          </button>
+          <button style={{ padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.7)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', backdropFilter: 'blur(8px)', borderRadius: '50%' }} onClick={toggleFullscreen} title="Toggle Fullscreen">
+            <Maximize size={16} />
+          </button>
+        </div>
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <button style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#ffffff', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', padding: '8px 16px', borderRadius: '9999px', cursor: 'pointer', fontWeight: '500' }} onClick={() => setShowFeedback(true)}>
-            <MessageSquare size={18} /> Request Changes
+        <div style={{ display: 'flex', gap: isPortraitLayout ? '6px' : '10px', alignItems: 'center', flex: 1, justifyContent: 'flex-end', minWidth: 0, paddingLeft: '10px' }}>
+          <button 
+            onClick={() => navigate(`/editor/${session.folderId}/${encodeURIComponent(fileId)}`)}
+            style={{ flex: 1, maxWidth: '200px', height: '44px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '9999px', cursor: 'pointer', fontWeight: '500', backdropFilter: 'blur(8px)', whiteSpace: 'nowrap', padding: '0 8px', fontSize: isPortraitLayout ? '0.75rem' : '0.9rem' }}
+          >
+            Review List
           </button>
-          <button className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '9999px', border: 'none' }} onClick={handleApprove}>
-            <Check size={18} /> Approve Album
+          <button style={{ flex: 1, maxWidth: '200px', height: '44px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '5px', backgroundColor: '#ffffff', color: 'var(--color-primary)', border: '1px solid var(--color-primary)', borderRadius: '9999px', cursor: 'pointer', fontWeight: '500', whiteSpace: 'nowrap', padding: '0 8px', fontSize: isPortraitLayout ? '0.75rem' : '0.9rem' }} onClick={() => setShowAnnotationEditor(true)}>
+            <MessageSquare size={16} /> Suggest Changes
           </button>
-          <button style={{ padding: '8px', color: 'var(--color-primary)', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={toggleFullscreen} title="Toggle Fullscreen">
-            <Maximize size={18} />
+          <button className="btn-primary" style={{ flex: 1, maxWidth: '200px', height: '44px', justifyContent: 'center', display: 'flex', alignItems: 'center', gap: '5px', borderRadius: '9999px', border: 'none', cursor: 'pointer', fontWeight: '500', whiteSpace: 'nowrap', padding: '0 8px', fontSize: isPortraitLayout ? '0.75rem' : '0.9rem' }} onClick={handleApprove}>
+            <Check size={16} /> APPROVE ALBUM
           </button>
         </div>
       </div>
@@ -575,44 +583,9 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
         <RotateCcw size={18} /> Reset Zoom
       </button>
 
-      {showFeedback && (
-        <FeedbackModal
-          onClose={() => setShowFeedback(false)}
-          totalPages={pages.length}
-          folderId={session.folderId}
-          fileId={fileId}
-        />
-      )}
 
-      {/* Mobile Floating Action Button */}
-      {window.innerWidth <= 768 && !showAnnotationEditor && (
-        <button 
-          onClick={() => setShowAnnotationEditor(true)}
-          style={{
-            position: 'absolute',
-            bottom: '30px',
-            right: '20px',
-            padding: '12px 20px',
-            borderRadius: '9999px',
-            backgroundColor: 'rgba(255, 255, 255, 0.8)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid var(--color-primary)',
-            display: 'flex',
-            gap: '8px',
-            alignItems: 'center',
-            color: 'var(--color-primary)',
-            boxShadow: '0 8px 32px rgba(139, 21, 26, 0.15)',
-            zIndex: 50,
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '0.9rem'
-          }}
-        >
-          <Pencil size={18} />
-          Suggest Changes
-        </button>
-      )}
+
+
 
       {/* Mobile Annotation Editor */}
       {showAnnotationEditor && (
@@ -620,6 +593,7 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
           images={getPagesToAnnotate()} 
           onClose={() => setShowAnnotationEditor(false)}
           metadata={{
+            folderId: session.folderId,
             albumId: decodeURIComponent(fileId).replace('.pdf', ''),
             pageInfo: currentPage === 0 ? 'Cover' : currentPage >= pages.length - 2 ? 'Back Cover' : `Pages ${currentPage + 1}-${currentPage + 2}`
           }}

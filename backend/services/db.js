@@ -113,10 +113,68 @@ async function getProjectStatus(folderId) {
   }
 }
 
+async function addAlbumReview(folderId, albumId, reviewData) {
+  if (!db) return null;
+  
+  try {
+    // We store album reviews under projects/{folderId}/albums/{albumId}/reviews/{reviewId}
+    const reviewId = reviewData.reviewId || Date.now().toString();
+    const docRef = doc(db, 'projects', folderId, 'albums', albumId, 'reviews', reviewId);
+    
+    const docData = {
+      ...reviewData,
+      id: reviewId,
+      createdAt: new Date().toISOString()
+    };
+    
+    await setDoc(docRef, docData);
+    return docData;
+  } catch (error) {
+    console.error('Error in addAlbumReview:', error);
+    throw error;
+  }
+}
+
+async function getAlbumReviews(folderId, albumId) {
+  if (!db) return [];
+  
+  try {
+    const collRef = collection(db, 'projects', folderId, 'albums', albumId, 'reviews');
+    const snapshot = await getDocs(collRef);
+    const reviews = [];
+    
+    snapshot.forEach(docSnap => {
+      reviews.push(docSnap.data());
+    });
+    
+    // Sort by createdAt descending
+    return reviews.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } catch (error) {
+    console.error('Error in getAlbumReviews:', error);
+    return [];
+  }
+}
+
+async function updateAlbumReviewStatus(folderId, albumId, reviewId, status) {
+  if (!db) return null;
+  
+  try {
+    const docRef = doc(db, 'projects', folderId, 'albums', albumId, 'reviews', reviewId);
+    await setDoc(docRef, { status, updatedAt: new Date().toISOString() }, { merge: true });
+    return { id: reviewId, status };
+  } catch (error) {
+    console.error('Error in updateAlbumReviewStatus:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   getVideoData,
   addVideoComment,
   deleteVideoComment,
   updateVideoStatus,
-  getProjectStatus
+  getProjectStatus,
+  addAlbumReview,
+  getAlbumReviews,
+  updateAlbumReviewStatus
 };

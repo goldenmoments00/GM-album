@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const driveService = require('../services/drive');
 const dbService = require('../services/db');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
 // In a real application, we might want to use JWTs or sessions, 
 // but since this is a simple portal, the frontend can just keep the folder ID in memory
@@ -185,6 +187,93 @@ router.post('/video/status', async (req, res) => {
     res.json({ success: true, video });
   } catch (err) {
     res.status(500).json({ error: 'Failed to update status' });
+  }
+});
+
+/**
+ * POST /api/reviews/upload
+ */
+router.post('/reviews/upload', upload.fields([{ name: 'screenshot' }, { name: 'voice' }]), async (req, res) => {
+  try {
+    const { folderId, albumId, pageNumber, comment, createdBy } = req.body;
+    
+    // 1. Find or create the Reviews folder
+    const reviewsFolderId = await driveService.findOrCreateReviewsFolder(folderId);
+    
+    // 2. Create the Review-XXX folder
+    const { folderId: reviewFolderId, reviewNumber } = await driveService.createNewReviewFolder(reviewsFolderId);
+    
+    // 3. Upload assets
+    const screenshotBuffer = req.files && req.files['screenshot'] ? req.files['screenshot'][0].buffer : null;
+    const voiceBuffer = req.files && req.files['voice'] ? req.files['voice'][0].buffer : null;
+    
+    const assets = await driveService.uploadReviewAssets(reviewFolderId, screenshotBuffer, voiceBuffer);
+    
+    // 4. Save metadata to Firestore
+    const reviewData = {
+      albumId,
+      projectFolderId: folderId,
+      pageNumber: parseInt(pageNumber),
+      googleDriveScreenshotFileId: assets.screenshot ? assets.screenshot.id : null,
+      googleDriveVoiceFileId: assets.voice ? assets.voice.id : null,
+      googleDriveScreenshotUrl: assets.screenshot ? assets.screenshot.webViewLink : null,
+      googleDriveVoiceUrl: assets.voice ? assets.voice.webViewLink : null,
+      comment: comment || '',
+      status: 'Pending',
+      createdBy: createdBy || 'Client',
+      reviewNumber,
+      updatedAt: new Date().toISOString()
+    };
+    
+    const savedReview = await dbService.addAlbumReview(folderId, albumId, reviewData);
+    
+    res.json({ success: true, review: savedReview });
+  } catch (err) {
+    console.error('Review Upload Error:', err);
+    res.status(500).json({ error: err.message, stack: err.stack });
+  }
+});
+
+/**
+ * GET /api/reviews/:folderId/:albumId
+ */
+router.get('/reviews/:folderId/:albumId', async (req, res) => {
+  try {
+    const { folderId, albumId } = req.params;
+    const reviews = await dbService.getAlbumReviews(folderId, albumId);
+    res.json({ success: true, reviews });
+  } catch (err) {
+    console.error('Fetch Reviews Error:', err);
+    res.status(500).json({ error: 'Failed to fetch reviews' });
+  }
+});
+
+/**
+ * POST /api/reviews/status
+ */
+router.post('/reviews/status', async (req, res) => {
+  try {
+    const { folderId, albumId, reviewId, status } = req.body;
+    await dbService.updateAlbumReviewStatus(folderId, albumId, reviewId, status);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Update Review Status Error:', err);
+    res.status(500).json({ error: 'Failed to update review status' });
+  }
+});
+
+/**
+ * GET /api/drive/file/:fileId
+ * Generic endpoint to stream files (images, audio, etc) directly by fileId
+ */
+router.get('/drive/file/:fileId', async (req, res) => {
+  try {
+    const fileId = req.params.fileId;
+    const rangeHeader = req.headers.range;
+    await driveService.streamFileById(fileId, res, rangeHeader);
+  } catch (err) {
+    console.error('File Stream Error:', err);
+    if (!res.headersSent) res.status(500).json({ error: 'Failed to stream file' });
   }
 });
 

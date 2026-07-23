@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { 
   X, Undo, Redo, Trash2, Download, MessageSquare, 
-  Paintbrush, Highlighter, Square, Circle, ArrowUpRight
+  Paintbrush, Highlighter, Square, Circle, ArrowUpRight,
+  Mic, Square as StopSquare, Play, Trash
 } from 'lucide-react';
 
 export default function MobileAnnotationEditor({ 
@@ -25,6 +26,19 @@ export default function MobileAnnotationEditor({
   
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentPath, setCurrentPath] = useState(null);
+
+  // New States for Reviews
+  const [comment, setComment] = useState('');
+  const [isRecording, setIsRecording] = useState(false);
+  const [voiceBlob, setVoiceBlob] = useState(null);
+  const [voiceUrl, setVoiceUrl] = useState(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const timerRef = useRef(null);
 
   const colors = ['#ff0000', '#3b82f6', '#22c55e', '#eab308', '#ffffff'];
   const sizes = [
@@ -363,8 +377,72 @@ export default function MobileAnnotationEditor({
     setRedoStack([]);
   };
 
-  const handleSave = () => {
-    if (!bgCanvas) return;
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        setVoiceBlob(audioBlob);
+        setVoiceUrl(URL.createObjectURL(audioBlob));
+        stream.getTracks().forEach(track => track.stop());
+      };
+      
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      timerRef.current = setInterval(() => {
+        setRecordingTime(prev => {
+          if (prev >= 59) {
+            stopRecording();
+            return 60;
+          }
+          return prev + 1;
+        });
+      }, 1000);
+      
+    } catch (err) {
+      console.error('Error accessing mic', err);
+      if (window.isSecureContext === false) {
+        alert('Microphone access requires a secure connection (HTTPS). Since you are testing on a local IP address (HTTP), the browser blocks it. Please test on localhost, use a secure tunnel (like ngrok), or deploy the app to test voice recording.');
+      } else {
+        alert('Could not access microphone. Please ensure you have granted microphone permissions to this site.');
+      }
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      clearInterval(timerRef.current);
+    }
+  };
+
+  const deleteRecording = () => {
+    if (voiceUrl) URL.revokeObjectURL(voiceUrl);
+    setVoiceBlob(null);
+    setVoiceUrl(null);
+    setRecordingTime(0);
+  };
+
+  const formatTime = (secs) => {
+    const m = Math.floor(secs / 60).toString().padStart(2, '0');
+    const s = (secs % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
+  const handleSave = async () => {
+    if (!bgCanvas || isSaving) return;
+    setIsSaving(true);
     
     // Generate final hi-res canvas
     const outCanvas = document.createElement('canvas');
@@ -374,12 +452,10 @@ export default function MobileAnnotationEditor({
     
     ctx.drawImage(bgCanvas, 0, 0);
     
-    // Calculate scale for export sizing
     const cWidth = containerRef.current.clientWidth;
     const cHeight = containerRef.current.clientHeight;
     const exportScale = Math.min(cWidth / bgCanvas.width, cHeight / bgCanvas.height);
     
-    // Draw paths exactly like redraw but scale=1, offsetX=0, offsetY=0
     paths.forEach(p => {
       ctx.beginPath();
       if (p.tool === 'highlight') {
@@ -427,25 +503,39 @@ export default function MobileAnnotationEditor({
       }
     });
     
-    const dataUrl = outCanvas.toDataURL('image/png', 1.0);
-    
-    // Download image
-    const link = document.createElement('a');
-    const filename = `Album_Changes_${metadata.albumId || 'Page'}.png`;
-    link.download = filename;
-    link.href = dataUrl;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    // Open WhatsApp
-    const message = `Hi GoldenMoment,\n\nI would like to request some changes to my album.\n\nAlbum ID: ${metadata.albumId || 'Unknown'}\nPage: ${metadata.pageInfo || 'Unknown'}\n\nPlease find the attached annotated screenshot showing the required changes.\n\nThanks.`;
-    const waUrl = `whatsapp://send?phone=916009426410&text=${encodeURIComponent(message)}`;
-    
-    setTimeout(() => {
-      window.location.href = waUrl;
-      onClose();
-    }, 500);
+    outCanvas.toBlob(async (blob) => {
+      const formData = new FormData();
+      formData.append('screenshot', blob, 'screenshot.png');
+      
+      if (voiceBlob) {
+        formData.append('voice', voiceBlob, 'voice.webm');
+      }
+      
+      formData.append('folderId', metadata.folderId || '');
+      formData.append('albumId', metadata.albumId || '');
+      formData.append('pageNumber', metadata.pageInfo ? metadata.pageInfo.split('-')[0] : '1');
+      formData.append('comment', comment || '');
+      formData.append('createdBy', 'Client');
+
+      try {
+        const response = await fetch('/api/reviews/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        setIsSaving(false);
+        onClose(); // Auto close on success
+      } catch (err) {
+        console.error('Save error:', err);
+        alert(`Failed to save review. Reason: ${err.message}`);
+        setIsSaving(false);
+      }
+    }, 'image/png', 1.0);
   };
 
   // Determine if portrait
@@ -480,91 +570,217 @@ export default function MobileAnnotationEditor({
           <button onClick={clear} disabled={paths.length === 0} style={{ background: 'none', border: 'none', color: paths.length ? '#e74c3c' : '#555', padding: '8px' }}><Trash2 size={20} /></button>
         </div>
         
-        <button onClick={handleSave} style={{ 
+        <button onClick={handleSave} disabled={isSaving} style={{ 
           background: 'var(--color-gold)', border: 'none', color: '#1a120b', 
-          padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', display: 'flex', gap: '5px', alignItems: 'center', fontSize: '0.85rem'
+          padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', display: 'flex', gap: '5px', alignItems: 'center', fontSize: '0.85rem',
+          opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'wait' : 'pointer'
         }}>
-          <MessageSquare size={14} /> Save & Share
+          <MessageSquare size={14} /> {isSaving ? 'Saving...' : 'Save & Share'}
         </button>
       </div>
 
-      {/* Canvas Area */}
-      <div 
-        ref={containerRef}
-        style={{ flex: 1, position: 'relative', overflow: 'hidden', touchAction: 'none' }}
-      >
-        <canvas ref={canvasRef} style={{ touchAction: 'none', display: 'block' }} />
-      </div>
-
-      {/* Bottom Tools Toolbar — single compact row */}
-      <div ref={bottomToolbarRef} style={{
-        backgroundColor: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(10px)', 
-        padding: '8px 10px',
-        borderTop: '1px solid rgba(255,255,255,0.1)', 
-        display: 'flex', alignItems: 'center', gap: '8px',
-        overflowX: 'auto', flexShrink: 0
-      }}>
-        {/* Tool buttons */}
-        {[
-          { id: 'brush', icon: Paintbrush },
-          { id: 'highlight', icon: Highlighter },
-          { id: 'arrow', icon: ArrowUpRight },
-          { id: 'rect', icon: Square },
-          { id: 'circle', icon: Circle }
-        ].map(t => (
-          <button 
-            key={t.id} 
-            onClick={() => setTool(t.id)}
-            style={{
-              background: tool === t.id ? 'rgba(255,255,255,0.2)' : 'none',
-              border: 'none', color: tool === t.id ? 'var(--color-gold)' : 'white',
-              padding: '8px', borderRadius: '8px', minWidth: '36px',
-              display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0
-            }}
+      {/* Main Content Area - Full screen */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        
+        {/* Canvas Area */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div 
+            ref={containerRef}
+            style={{ flex: 1, position: 'relative', overflow: 'hidden', touchAction: 'none', backgroundColor: '#111' }}
           >
-            <t.icon size={18} />
-          </button>
-        ))}
+            <canvas ref={canvasRef} style={{ touchAction: 'none', display: 'block' }} />
+          </div>
 
-        {/* Divider */}
-        <div style={{ width: '1px', height: '24px', backgroundColor: 'rgba(255,255,255,0.15)', flexShrink: 0 }} />
+          {/* Bottom Tools Toolbar — single compact row */}
+          <div ref={bottomToolbarRef} style={{
+            backgroundColor: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(10px)', 
+            padding: '8px 10px',
+            borderTop: '1px solid rgba(255,255,255,0.1)', 
+            display: 'flex', alignItems: 'center', gap: '8px',
+            overflowX: 'auto', flexShrink: 0
+          }}>
+            {/* Tool buttons */}
+            {[
+              { id: 'brush', icon: Paintbrush },
+              { id: 'highlight', icon: Highlighter },
+              { id: 'arrow', icon: ArrowUpRight },
+              { id: 'rect', icon: Square },
+              { id: 'circle', icon: Circle }
+            ].map(t => (
+              <button 
+                key={t.id} 
+                onClick={() => setTool(t.id)}
+                style={{
+                  background: tool === t.id ? 'rgba(255,255,255,0.2)' : 'none',
+                  border: 'none', color: tool === t.id ? 'var(--color-gold)' : 'white',
+                  padding: '8px', borderRadius: '8px', minWidth: '36px',
+                  display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0
+                }}
+              >
+                <t.icon size={18} />
+              </button>
+            ))}
 
-        {/* Colors */}
-        {colors.map(c => (
-          <button 
-            key={c} onClick={() => setColor(c)}
-            style={{
-              width: '22px', height: '22px', borderRadius: '50%', background: c, flexShrink: 0,
-              border: color === c ? '2px solid white' : '2px solid transparent',
-              boxShadow: color === c ? '0 0 0 1px var(--color-gold)' : 'none'
-            }}
-          />
-        ))}
+            {/* Divider */}
+            <div style={{ width: '1px', height: '24px', backgroundColor: 'rgba(255,255,255,0.15)', flexShrink: 0 }} />
 
-        {/* Divider */}
-        <div style={{ width: '1px', height: '24px', backgroundColor: 'rgba(255,255,255,0.15)', flexShrink: 0 }} />
+            {/* Add Comment Button */}
+            <button 
+              onClick={() => setShowCommentModal(true)}
+              style={{
+                background: (comment || voiceBlob) ? 'rgba(234, 179, 8, 0.2)' : 'none',
+                border: 'none',
+                color: (comment || voiceBlob) ? 'var(--color-gold)' : 'white',
+                padding: '8px', borderRadius: '8px', minWidth: '36px',
+                display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0
+              }}
+            >
+              <MessageSquare size={18} />
+            </button>
 
-        {/* Sizes */}
-        {sizes.map(s => (
-          <button 
-            key={s.label} onClick={() => setSize(s.val)}
-            style={{
-              background: 'none', flexShrink: 0,
-              border: size === s.val ? '1px solid var(--color-gold)' : '1px solid rgba(255,255,255,0.2)',
-              color: size === s.val ? 'var(--color-gold)' : 'white',
-              borderRadius: '10px',
-              padding: '3px 7px',
-              fontSize: '0.7rem',
-              fontWeight: 'bold'
-            }}
-          >
-            {s.label}
-          </button>
-        ))}
+            {/* Divider */}
+            <div style={{ width: '1px', height: '24px', backgroundColor: 'rgba(255,255,255,0.15)', flexShrink: 0 }} />
+
+            {/* Colors */}
+            {colors.map(c => (
+              <button 
+                key={c} onClick={() => setColor(c)}
+                style={{
+                  width: '22px', height: '22px', borderRadius: '50%', background: c, flexShrink: 0,
+                  border: color === c ? '2px solid white' : '2px solid transparent',
+                  boxShadow: color === c ? '0 0 0 1px var(--color-gold)' : 'none'
+                }}
+              />
+            ))}
+
+            {/* Divider */}
+            <div style={{ width: '1px', height: '24px', backgroundColor: 'rgba(255,255,255,0.15)', flexShrink: 0 }} />
+
+            {/* Sizes */}
+            {sizes.map(s => (
+              <button 
+                key={s.label} onClick={() => setSize(s.val)}
+                style={{
+                  background: 'none', flexShrink: 0,
+                  border: size === s.val ? '1px solid var(--color-gold)' : '1px solid rgba(255,255,255,0.2)',
+                  color: size === s.val ? 'var(--color-gold)' : 'white',
+                  borderRadius: '10px',
+                  padding: '3px 7px',
+                  fontSize: '0.7rem',
+                  fontWeight: 'bold'
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 
+  const modalUI = showCommentModal ? (
+    <div style={{
+      position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 100005,
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      backdropFilter: 'blur(5px)'
+    }}>
+      <div style={{ 
+        width: '90%', maxWidth: '400px', backgroundColor: '#1a1a1a', 
+        borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '20px',
+        border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h3 style={{ color: 'white', margin: 0, fontSize: '1.2rem' }}>Add Note & Voice</h3>
+          <button onClick={() => setShowCommentModal(false)} style={{ background: 'none', border: 'none', color: '#aaa', padding: '5px' }}>
+            <X size={20} />
+          </button>
+        </div>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <label style={{ color: 'white', fontSize: '0.95rem', fontWeight: 'bold' }}>Change Description</label>
+          <textarea
+            placeholder="e.g., Replace this image&#10;Make this photo larger&#10;Remove this person"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            style={{
+              width: '100%', minHeight: '100px', padding: '12px',
+              borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
+              backgroundColor: '#222', color: 'white', resize: 'none',
+              fontFamily: 'inherit', fontSize: '0.95rem'
+            }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <label style={{ color: 'white', fontSize: '0.95rem', fontWeight: 'bold' }}>Voice Recording (Optional)</label>
+          
+          {!voiceBlob && !isRecording ? (
+            <button 
+              onClick={startRecording}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                padding: '14px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
+                backgroundColor: '#222', color: 'white', cursor: 'pointer', fontSize: '1rem'
+              }}
+            >
+              <Mic size={20} color="var(--color-gold)" /> Start Recording (Max 60s)
+            </button>
+          ) : isRecording ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '12px 16px', borderRadius: '8px', border: '1px solid rgba(255,0,0,0.5)',
+              backgroundColor: 'rgba(255,0,0,0.1)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#ff4444', fontWeight: 'bold' }}>
+                <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: '#ff4444', animation: 'pulse 1s infinite' }} />
+                Recording: {formatTime(recordingTime)}
+              </div>
+              <button 
+                onClick={stopRecording}
+                style={{ background: 'var(--color-primary)', border: 'none', color: 'white', display: 'flex', alignItems: 'center', padding: '8px 12px', borderRadius: '6px', fontWeight: 'bold' }}
+              >
+                <StopSquare size={16} fill="white" style={{ marginRight: '5px' }} /> Stop
+              </button>
+            </div>
+          ) : (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px',
+              padding: '12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)',
+              backgroundColor: '#222'
+            }}>
+              <audio src={voiceUrl} controls style={{ flex: 1, height: '40px' }} />
+              <button 
+                onClick={deleteRecording}
+                style={{ background: 'none', border: 'none', color: '#e74c3c', padding: '10px' }}
+              >
+                <Trash size={22} />
+              </button>
+            </div>
+          )}
+        </div>
+        
+        <button 
+          onClick={() => setShowCommentModal(false)}
+          style={{
+            width: '100%', padding: '12px', borderRadius: '8px',
+            backgroundColor: 'var(--color-primary)', color: 'white',
+            border: 'none', fontWeight: 'bold', fontSize: '1rem', marginTop: '10px'
+          }}
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   // Render via portal to bypass DesktopViewer's rotated container
-  return createPortal(editorUI, document.body);
+  return createPortal(
+    <>
+      {editorUI}
+      {modalUI}
+    </>, 
+    document.body
+  );
 }

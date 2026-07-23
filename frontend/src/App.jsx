@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Viewer from './pages/Viewer';
 import VideoPlayerPage from './pages/VideoPlayerPage';
+import EditorView from './pages/EditorView';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -26,6 +27,10 @@ function App() {
           <Route 
             path="/video/:fileId" 
             element={session ? <VideoPlayerPage session={session} /> : <Navigate to="/login" replace />} 
+          />
+          <Route 
+            path="/editor/:folderId/:albumId" 
+            element={<EditorView />} 
           />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
