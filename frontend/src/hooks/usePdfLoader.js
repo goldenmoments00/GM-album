@@ -75,9 +75,9 @@ export function usePdfLoader(session, fileId) {
 
         if (isMounted) setPages([...structure]);
 
-        const renderPageToImage = async (pdfPageNum, type) => {
+        const renderPageToImage = async (pdfPageNum, type, customScale = 1.5) => {
           const page = await pdf.getPage(pdfPageNum);
-          const viewport = page.getViewport({ scale: 1.5 });
+          const viewport = page.getViewport({ scale: customScale });
           const canvas = document.createElement('canvas');
           const context = canvas.getContext('2d');
           canvas.height = viewport.height;
@@ -91,10 +91,11 @@ export function usePdfLoader(session, fileId) {
           return canvas.toDataURL('image/jpeg', 0.8);
         };
 
-        const initialLoadCount = Math.min(2, structure.length);
+        const initialLoadCount = Math.min(5, structure.length);
         for (let i = 0; i < initialLoadCount; i++) {
-          if (!structure[i].imgSrc) {
-            structure[i].imgSrc = await renderPageToImage(structure[i].pdfPage, structure[i].type);
+          if (!structure[i].imgSrc && structure[i].type !== 'blank') {
+            structure[i].imgSrc = await renderPageToImage(structure[i].pdfPage, structure[i].type, 0.5);
+            structure[i].isLowRes = true;
           }
         }
 
@@ -103,14 +104,26 @@ export function usePdfLoader(session, fileId) {
           setLoading(false);
         }
         
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
+        // Load the rest of the pages in high resolution
         for (let i = initialLoadCount; i < structure.length; i++) {
           if (!isMounted) break;
-          if (!structure[i].imgSrc) {
-            structure[i].imgSrc = await renderPageToImage(structure[i].pdfPage, structure[i].type);
+          if (!structure[i].imgSrc && structure[i].type !== 'blank') {
+            structure[i].imgSrc = await renderPageToImage(structure[i].pdfPage, structure[i].type, 1.5);
             setPages([...structure]); 
-            await new Promise(resolve => setTimeout(resolve, 300));
+            await new Promise(resolve => setTimeout(resolve, 200));
+          }
+        }
+
+        // Upgrade the initial low resolution pages to high resolution
+        for (let i = 0; i < initialLoadCount; i++) {
+          if (!isMounted) break;
+          if (structure[i].isLowRes) {
+            structure[i].imgSrc = await renderPageToImage(structure[i].pdfPage, structure[i].type, 1.5);
+            structure[i].isLowRes = false;
+            setPages([...structure]); 
+            await new Promise(resolve => setTimeout(resolve, 200));
           }
         }
       } catch (error) {
