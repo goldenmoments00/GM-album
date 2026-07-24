@@ -24,6 +24,114 @@ async function getVideoData(folderId, fileName) {
   }
 }
 
+async function createProject(projectName, password) {
+  if (!db) throw new Error('[Firebase] Database not initialized');
+  try {
+    const projectId = password.trim(); // Using password as ID for simplicity, matching legacy behavior
+    const docRef = doc(db, 'projects', projectId);
+    
+    // Check if project exists
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+      throw new Error('Project with this password already exists');
+    }
+
+    const projectData = {
+      id: projectId,
+      name: projectName,
+      password: password.trim(),
+      createdAt: new Date().toISOString(),
+      source: 'r2' // Distinguish from legacy Google Drive projects
+    };
+
+    await setDoc(docRef, projectData);
+    return projectData;
+  } catch (error) {
+    console.error('Error in createProject:', error);
+    throw error;
+  }
+}
+
+async function getProjects() {
+  if (!db) throw new Error('[Firebase] Database not initialized');
+  try {
+    const collRef = collection(db, 'projects');
+    const snapshot = await getDocs(collRef);
+    const projects = [];
+    
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.source === 'r2') {
+        projects.push(data);
+      }
+    });
+    
+    return projects.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } catch (error) {
+    console.error('Error in getProjects:', error);
+    throw error;
+  }
+}
+
+async function getProjectById(projectId) {
+  if (!db) return null;
+  try {
+    const docRef = doc(db, 'projects', projectId);
+    const docSnap = await getDoc(docRef);
+    return docSnap.exists() ? docSnap.data() : null;
+  } catch (error) {
+    console.error('Error in getProjectById:', error);
+    return null;
+  }
+}
+
+async function addProjectFile(projectId, fileData) {
+  if (!db) throw new Error('[Firebase] Database not initialized');
+  try {
+    // Determine collection based on file type (pdf -> albums, video -> videos)
+    const collectionName = fileData.type === 'pdf' ? 'albums' : 'videos';
+    
+    // Use the file name as the document ID for consistency
+    const fileId = fileData.name.replace(/\.[^/.]+$/, ""); // Remove extension for ID
+    
+    const docRef = doc(db, 'projects', projectId, collectionName, fileData.name);
+    
+    const newFile = {
+      id: fileId,
+      name: fileData.name,
+      title: fileId,
+      url: fileData.url, // Cloudflare R2 public URL
+      type: fileData.type,
+      size: fileData.size,
+      status: 'Waiting for Review',
+      comments: [],
+      createdAt: new Date().toISOString()
+    };
+    
+    await setDoc(docRef, newFile);
+    return newFile;
+  } catch (error) {
+    console.error('Error in addProjectFile:', error);
+    throw error;
+  }
+}
+
+async function getProjectFiles(projectId, collectionName) {
+  if (!db) return [];
+  try {
+    const collRef = collection(db, 'projects', projectId, collectionName);
+    const snapshot = await getDocs(collRef);
+    const files = [];
+    snapshot.forEach(docSnap => {
+      files.push(docSnap.data());
+    });
+    return files;
+  } catch (error) {
+    console.error(`Error in getProjectFiles (${collectionName}):`, error);
+    return [];
+  }
+}
+
 async function addVideoComment(folderId, fileName, timestamp, commentText, googleDriveVoiceFileId = null, googleDriveVoiceUrl = null) {
   if (!db) {
     console.warn('[Firebase] Database not initialized');
@@ -195,5 +303,10 @@ module.exports = {
   addAlbumReview,
   getAlbumReviews,
   updateAlbumReviewStatus,
-  deleteAlbumReview
+  deleteAlbumReview,
+  createProject,
+  getProjects,
+  getProjectById,
+  addProjectFile,
+  getProjectFiles
 };

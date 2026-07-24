@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const driveService = require('../services/drive');
 const dbService = require('../services/db');
+const r2Service = require('../services/r2');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -21,26 +22,48 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Password is required' });
     }
 
-    console.log(`[Login Request] Attempting login with password/folder: "${password}"`);
-    // Treat the password as the folder name
-    const folderId = await driveService.findFolderByName(password);
+    console.log(`[Login Request] Attempting login with password: "${password}"`);
     
-    if (!folderId) {
-      console.warn(`[Login Failed] Folder ID not found for password: "${password}"`);
-      return res.status(401).json({ error: 'Invalid Album Password' });
+    // First, try checking Firebase for an R2 project
+    let project = await dbService.getProjectById(password);
+    let folderId = null;
+    let albums = [];
+    let isR2 = false;
+
+    if (project && project.source === 'r2') {
+      console.log(`[Login Success] Found R2 project for password "${password}"`);
+      folderId = project.id;
+      isR2 = true;
+      // Fetch albums from R2/Firebase
+      const r2Albums = await dbService.getProjectFiles(folderId, 'albums');
+      // Map to expected legacy structure { title, file, url }
+      albums = r2Albums.map(a => ({
+        title: a.title,
+        file: a.name,
+        url: a.url,
+        isR2: true
+      }));
+    } else {
+      // Fallback to legacy Google Drive
+      folderId = await driveService.findFolderByName(password);
+      
+      if (!folderId) {
+        console.warn(`[Login Failed] Folder ID not found for password: "${password}"`);
+        return res.status(401).json({ error: 'Invalid Album Password' });
+      }
+
+      console.log(`[Login Success] Found Google Drive folder ID "${folderId}" for password "${password}"`);
+      albums = await driveService.getAlbumsInFolder(folderId);
     }
 
-    console.log(`[Login Success] Found folder ID "${folderId}" for password "${password}"`);
-
-    // Fetch the album PDFs directly from the folder
-    const albums = await driveService.getAlbumsInFolder(folderId);
-
-    // Return the new structure
+    // Return the structure
     res.json({
       success: true,
       folderId: folderId,
       albumId: password,
-      albums: albums
+      albums: albums,
+      isR2: isR2,
+      projectName: project ? project.name : password
     });
   } catch (error) {
     console.error('Login Error:', error);
@@ -73,6 +96,16 @@ router.get('/pdf/:id/:file', async (req, res) => {
     const fileName = req.params.file;
     const rangeHeader = req.headers.range;
     
+    // Check if it's an R2 project
+    const project = await dbService.getProjectById(folderId);
+    if (project && project.source === 'r2') {
+      const r2Albums = await dbService.getProjectFiles(folderId, 'albums');
+      const album = r2Albums.find(a => a.name === fileName);
+      if (album && album.url) {
+        return res.redirect(album.url);
+      }
+    }
+
     await driveService.streamPdf(folderId, fileName, res, rangeHeader);
   } catch (error) {
     console.error('PDF Stream Error:', error);
@@ -116,6 +149,20 @@ router.get('/project-status/:id', async (req, res) => {
 router.get('/videos/:id', async (req, res) => {
   try {
     const folderId = req.params.id;
+    // Check if it's an R2 project
+    const project = await dbService.getProjectById(folderId);
+    if (project && project.source === 'r2') {
+      const r2Videos = await dbService.getProjectFiles(folderId, 'videos');
+      const videos = r2Videos.map(v => ({
+        title: v.title,
+        file: v.name,
+        url: v.url,
+        isR2: true
+      }));
+      return res.json({ videos });
+    }
+
+    // Legacy Google Drive
     const videos = await driveService.getVideosInFolder(folderId);
     res.json({ videos });
   } catch (error) {
@@ -132,6 +179,17 @@ router.get('/video/stream/:id/:file', async (req, res) => {
     const folderId = req.params.id;
     const fileName = req.params.file;
     const rangeHeader = req.headers.range;
+
+    // Check if it's an R2 project
+    const project = await dbService.getProjectById(folderId);
+    if (project && project.source === 'r2') {
+      const r2Videos = await dbService.getProjectFiles(folderId, 'videos');
+      const video = r2Videos.find(v => v.name === fileName);
+      if (video && video.url) {
+        return res.redirect(video.url);
+      }
+    }
+
     await driveService.streamVideo(folderId, fileName, res, rangeHeader);
   } catch (error) {
     console.error('Video Stream Error:', error);
@@ -323,6 +381,58 @@ router.get('/drive/file/:fileId', async (req, res) => {
   } catch (err) {
     console.error('File Stream Error:', err);
     if (!res.headersSent) res.status(500).json({ error: 'Failed to stream file' });
+  }
+});
+
+});
+
+// --- ADMIN API ROUTES ---
+
+router.post('/admin/login', (req, res) => {
+  const { password } = req.body;
+  if (password === (process.env.ADMIN_PASSWORD || 'admin123')) {
+    res.json({ success: true, token: 'admin-token' });
+  } else {
+    res.status(401).json({ error: 'Invalid admin password' });
+  }
+});
+
+router.get('/admin/projects', async (req, res) => {
+  try {
+    const projects = await dbService.getProjects();
+    res.json({ projects });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/admin/projects', async (req, res) => {
+  try {
+    const { name, password } = req.body;
+    const project = await dbService.createProject(name, password);
+    res.json({ success: true, project });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/admin/upload-url', async (req, res) => {
+  try {
+    const { fileName, fileType } = req.body;
+    const urlData = await r2Service.generatePresignedUploadUrl(fileName, fileType);
+    res.json(urlData);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/admin/finalize-upload', async (req, res) => {
+  try {
+    const { projectId, fileData } = req.body;
+    const file = await dbService.addProjectFile(projectId, fileData);
+    res.json({ success: true, file });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

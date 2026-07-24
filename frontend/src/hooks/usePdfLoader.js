@@ -34,7 +34,14 @@ export function usePdfLoader(session, fileId) {
     const loadPDF = async () => {
       try {
         setLoading(true);
-        const pdfUrl = `/api/pdf/${session.folderId}/${fileId}`;
+        let pdfUrl = `/api/pdf/${session.folderId}/${fileId}`;
+        if (session.isR2 && session.albums) {
+          const matchedAlbum = session.albums.find(a => a.file === fileId);
+          if (matchedAlbum && matchedAlbum.url) {
+            pdfUrl = matchedAlbum.url;
+          }
+        }
+        
         const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
 
         loadingTask.onProgress = (p) => {
@@ -91,7 +98,7 @@ export function usePdfLoader(session, fileId) {
           return canvas.toDataURL('image/jpeg', 0.8);
         };
 
-        const initialLoadCount = Math.min(5, structure.length);
+        const initialLoadCount = Math.min(2, structure.length);
         for (let i = 0; i < initialLoadCount; i++) {
           if (!structure[i].imgSrc && structure[i].type !== 'blank') {
             structure[i].imgSrc = await renderPageToImage(structure[i].pdfPage, structure[i].type, 0.5);

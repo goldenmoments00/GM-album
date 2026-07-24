@@ -5,6 +5,9 @@ import Dashboard from './pages/Dashboard';
 import Viewer from './pages/Viewer';
 import VideoPlayerPage from './pages/VideoPlayerPage';
 import EditorView from './pages/EditorView';
+import AdminLogin from './pages/AdminLogin';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminProjectView from './pages/AdminProjectView';
 
 function App() {
   const [session, setSession] = useState(null);
@@ -25,7 +28,8 @@ function App() {
             setSession({
               folderId: data.folderId,
               albumId: data.albumId,
-              albums: data.albums
+              albums: data.albums,
+              isR2: data.isR2
             });
           }
         } catch (err) {
@@ -64,6 +68,9 @@ function App() {
             path="/editor/:folderId/:albumId" 
             element={<EditorView />} 
           />
+          <Route path="/admin" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/project/:id" element={<AdminProjectView />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>

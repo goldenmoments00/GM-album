@@ -39,7 +39,8 @@ export default function Login({ onLogin }) {
       onLogin({
         folderId: data.folderId,
         albumId: data.albumId,
-        albums: data.albums
+        albums: data.albums,
+        isR2: data.isR2
       });
       
       navigate('/dashboard');
