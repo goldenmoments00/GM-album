@@ -129,7 +129,10 @@ export default function Dashboard({ session }) {
         {isOverviewExpanded && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '15px' }}>
             {['Album', 'Full event video', 'Highlight video', 'Reels'].map(cat => {
-              const catFiles = [...albums, ...videos].filter(f => (f.category || (f.isR2 ? (f.title.endsWith('.pdf') ? 'Album' : 'Full event video') : (albums.includes(f) ? 'Album' : 'Full event video'))) === cat);
+              const catFiles = [...albums, ...videos].filter(f => {
+                const fallbackCat = albums.includes(f) ? 'Album' : 'Full event video';
+                return (f.category || fallbackCat) === cat;
+              });
               if (catFiles.length === 0) return null;
               
               return (
@@ -210,7 +213,10 @@ export default function Dashboard({ session }) {
         gap: '30px' 
       }}>
         {(() => {
-          const catFiles = [...albums, ...videos].filter(f => (f.category || (f.isR2 ? (f.title.endsWith('.pdf') ? 'Album' : 'Full event video') : (albums.includes(f) ? 'Album' : 'Full event video'))) === activeTab);
+          const catFiles = [...albums, ...videos].filter(f => {
+            const fallbackCat = albums.includes(f) ? 'Album' : 'Full event video';
+            return (f.category || fallbackCat) === activeTab;
+          });
           
           if (catFiles.length === 0) {
             return (
