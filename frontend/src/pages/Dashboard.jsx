@@ -131,15 +131,17 @@ export default function Dashboard({ session }) {
             {albums.map((a, i) => {
               const bgColor = status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : status === 'Needs Changes' ? 'rgba(197, 160, 89, 0.1)' : 'rgba(239, 68, 68, 0.1)';
               return (
-                <div key={`a-${i}`} style={{ 
+                <button key={`a-${i}`} style={{ 
                   display: 'flex', flexDirection: 'column', gap: '8px',
                   padding: '10px 12px', backgroundColor: bgColor, borderRadius: '10px', 
                   border: '1px solid rgba(255,255,255,0.05)',
                   borderLeft: `3px solid ${getStatusColor(status)}`,
                   boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
                   cursor: 'pointer',
+                  textAlign: 'inherit',
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                 }}
+                onClick={() => handleOpenAlbum(a.file)}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 5px 12px rgba(0,0,0,0.3)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)'; }}
                 >
@@ -151,22 +153,24 @@ export default function Dashboard({ session }) {
                     {getStatusIcon(status)}
                     {status}
                   </div>
-                </div>
+                </button>
               );
             })}
             {videos.map((v, i) => {
               const status = projectStatus?.videos?.[v.file]?.status || 'Waiting for Review';
               const bgColor = status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : status === 'Needs Changes' ? 'rgba(197, 160, 89, 0.1)' : 'rgba(239, 68, 68, 0.1)';
               return (
-                <div key={`v-${i}`} style={{ 
+                <button key={`v-${i}`} style={{ 
                   display: 'flex', flexDirection: 'column', gap: '8px',
                   padding: '10px 12px', backgroundColor: bgColor, borderRadius: '10px', 
                   border: '1px solid rgba(255,255,255,0.05)',
                   borderLeft: `3px solid ${getStatusColor(status)}`,
                   boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
                   cursor: 'pointer',
+                  textAlign: 'inherit',
                   transition: 'transform 0.2s ease, box-shadow 0.2s ease'
                 }}
+                onClick={() => handleOpenVideo(v.file)}
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 5px 12px rgba(0,0,0,0.3)'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)'; }}
                 >
@@ -178,7 +182,7 @@ export default function Dashboard({ session }) {
                     {getStatusIcon(status)}
                     {status}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -234,10 +238,15 @@ export default function Dashboard({ session }) {
         {activeTab === 'albums' && albums.map((album, index) => {
           const status = projectStatus?.albums?.[album.file]?.status || 'Waiting for Review';
           return (
-          <div key={index} style={{ 
+          <button key={index} style={{ 
             display: 'flex',
             flexDirection: 'column',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            background: 'none',
+            border: 'none',
+            padding: 0,
+            textAlign: 'inherit',
+            width: '100%'
           }} onClick={() => handleOpenAlbum(album.file)}>
             <div style={{ width: '100%', overflow: 'hidden', borderRadius: '12px' }}>
               <AlbumThumbnail folderId={folderId} fileName={album.file} />
@@ -250,7 +259,7 @@ export default function Dashboard({ session }) {
                 {album.title}
               </h3>
             </div>
-          </div>
+          </button>
         )})}
 
         {activeTab === 'videos' && videos.length === 0 && (
@@ -260,10 +269,15 @@ export default function Dashboard({ session }) {
         {activeTab === 'videos' && videos.map((video, index) => {
           const status = projectStatus?.videos?.[video.file]?.status || 'Waiting for Review';
           return (
-            <div key={index} style={{ 
+            <button key={index} style={{ 
               display: 'flex',
               flexDirection: 'column',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              textAlign: 'inherit',
+              width: '100%'
             }} onClick={() => handleOpenVideo(video.file)}>
               <div 
                 style={{ 
@@ -331,7 +345,7 @@ export default function Dashboard({ session }) {
                   {video.title}
                 </h3>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
