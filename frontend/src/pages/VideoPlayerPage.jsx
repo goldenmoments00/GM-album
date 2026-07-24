@@ -358,7 +358,7 @@ export default function VideoPlayerPage({ session }) {
                   
                   {comment.googleDriveVoiceFileId && (
                     <div style={{ marginTop: '10px' }}>
-                      <audio src={`/api/drive/file/${comment.googleDriveVoiceFileId}`} controls style={{ width: '100%', height: '35px' }} />
+                      <audio src={comment.googleDriveVoiceFileId.includes('/') ? comment.googleDriveVoiceUrl : `/api/drive/file/${comment.googleDriveVoiceFileId}`} controls style={{ width: '100%', height: '35px' }} />
                     </div>
                   )}
                 </div>

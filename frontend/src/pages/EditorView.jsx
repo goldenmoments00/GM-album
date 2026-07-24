@@ -200,11 +200,11 @@ export default function EditorView() {
                 {/* Screenshot Thumbnail */}
                 <div 
                   style={{ height: '200px', backgroundColor: '#000', position: 'relative', cursor: 'pointer', overflow: 'hidden' }}
-                  onClick={() => setExpandedImage(review.googleDriveScreenshotFileId ? `/api/drive/file/${review.googleDriveScreenshotFileId}` : null)}
+                  onClick={() => setExpandedImage(review.googleDriveScreenshotFileId ? (review.googleDriveScreenshotFileId.includes('/') ? review.googleDriveScreenshotUrl : `/api/drive/file/${review.googleDriveScreenshotFileId}`) : null)}
                 >
                   {review.googleDriveScreenshotFileId ? (
                     <img 
-                      src={`/api/drive/file/${review.googleDriveScreenshotFileId}`} 
+                      src={review.googleDriveScreenshotFileId.includes('/') ? review.googleDriveScreenshotUrl : `/api/drive/file/${review.googleDriveScreenshotFileId}`} 
                       alt="Review Screenshot" 
                       style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                       onError={(e) => { e.target.style.display = 'none'; }}
@@ -229,7 +229,7 @@ export default function EditorView() {
                   {review.googleDriveVoiceFileId && (
                     <div style={{ borderTop: '1px solid #333', paddingTop: '15px' }}>
                       <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '5px', fontWeight: 'bold' }}>Voice Note:</p>
-                      <audio src={`/api/drive/file/${review.googleDriveVoiceFileId}`} controls style={{ width: '100%', height: '40px' }} />
+                      <audio src={review.googleDriveVoiceFileId.includes('/') ? review.googleDriveVoiceUrl : `/api/drive/file/${review.googleDriveVoiceFileId}`} controls style={{ width: '100%', height: '40px' }} />
                     </div>
                   )}
 
