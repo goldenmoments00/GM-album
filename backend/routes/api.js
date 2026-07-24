@@ -384,7 +384,6 @@ router.get('/drive/file/:fileId', async (req, res) => {
   }
 });
 
-});
 
 // --- ADMIN API ROUTES ---
 
