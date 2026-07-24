@@ -12,6 +12,7 @@ export default function AdminProjectView() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState(''); // 'idle', 'uploading', 'success', 'error'
+  const [currentUploadText, setCurrentUploadText] = useState('');
   const fileInputRef = useRef(null);
 
   const fetchFiles = async () => {
@@ -47,91 +48,103 @@ export default function AdminProjectView() {
   }, [id, navigate]);
 
   const handleFileUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    // Must be PDF or MP4
-    if (file.type !== 'application/pdf' && !file.type.startsWith('video/')) {
-      alert('Please upload only PDF or Video files.');
-      return;
-    }
+    const filesList = Array.from(e.target.files);
+    if (!filesList.length) return;
 
     setUploading(true);
     setUploadStatus('uploading');
     setUploadProgress(0);
 
-    try {
-      // 1. Get Presigned URL from Backend
-      const typeStr = file.type === 'application/pdf' ? 'pdf' : 'video';
-      
-      const urlRes = await fetch('/api/admin/upload-url', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fileName: file.name, fileType: file.type })
-      });
-      
-      const { uploadUrl, key, publicUrl } = await urlRes.json();
-      
-      if (!uploadUrl) throw new Error('Failed to get upload URL');
+    let hasError = false;
 
-      // 2. Upload file directly to Cloudflare R2 using XMLHttpRequest to track progress
-      await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', uploadUrl, true);
-        xhr.setRequestHeader('Content-Type', file.type);
-        
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            const percentComplete = (event.loaded / event.total) * 100;
-            setUploadProgress(Math.round(percentComplete));
-          }
-        };
+    for (let i = 0; i < filesList.length; i++) {
+      const file = filesList[i];
 
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve();
-          } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
-          }
-        };
-        
-        xhr.onerror = () => reject(new Error('Network error during upload'));
-        
-        xhr.send(file);
-      });
-
-      // 3. Finalize: Tell backend the upload was successful so it saves to Database
-      const finalizeRes = await fetch('/api/admin/finalize-upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          projectId: id,
-          fileData: {
-            name: file.name,
-            type: typeStr,
-            url: publicUrl,
-            size: file.size
-          }
-        })
-      });
-
-      const finalizeData = await finalizeRes.json();
-      
-      if (finalizeData.success) {
-        setUploadStatus('success');
-        fetchFiles(); // Refresh the list of files
-      } else {
-        throw new Error('Database finalization failed');
+      // Must be PDF or MP4
+      if (file.type !== 'application/pdf' && !file.type.startsWith('video/')) {
+        alert(`Skipping ${file.name}: Please upload only PDF or Video files.`);
+        continue;
       }
-      
-    } catch (err) {
-      console.error(err);
-      setUploadStatus('error');
-    } finally {
-      setUploading(false);
-      // Reset input
-      if (fileInputRef.current) fileInputRef.current.value = '';
+
+      setCurrentUploadText(`Uploading ${file.name} (${i + 1} of ${filesList.length})...`);
+      setUploadProgress(0);
+
+      try {
+        // 1. Get Presigned URL from Backend
+        const typeStr = file.type === 'application/pdf' ? 'pdf' : 'video';
+        
+        const urlRes = await fetch('/api/admin/upload-url', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: file.name, fileType: file.type })
+        });
+        
+        const { uploadUrl, key, publicUrl } = await urlRes.json();
+        
+        if (!uploadUrl) throw new Error('Failed to get upload URL');
+
+        // 2. Upload file directly to Cloudflare R2 using XMLHttpRequest to track progress
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('PUT', uploadUrl, true);
+          xhr.setRequestHeader('Content-Type', file.type);
+          
+          xhr.upload.onprogress = (event) => {
+            if (event.lengthComputable) {
+              const percentComplete = (event.loaded / event.total) * 100;
+              setUploadProgress(Math.round(percentComplete));
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve();
+            } else {
+              reject(new Error(`Upload failed with status ${xhr.status}`));
+            }
+          };
+          
+          xhr.onerror = () => reject(new Error('Network error during upload'));
+          
+          xhr.send(file);
+        });
+
+        // 3. Finalize: Tell backend the upload was successful so it saves to Database
+        const finalizeRes = await fetch('/api/admin/finalize-upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            projectId: id,
+            fileData: {
+              name: file.name,
+              type: typeStr,
+              url: publicUrl,
+              size: file.size
+            }
+          })
+        });
+
+        const finalizeData = await finalizeRes.json();
+        
+        if (!finalizeData.success) {
+          throw new Error('Database finalization failed');
+        }
+        
+      } catch (err) {
+        console.error(`Failed to upload ${file.name}:`, err);
+        hasError = true;
+      }
     }
+
+    if (hasError) {
+      setUploadStatus('error');
+    } else {
+      setUploadStatus('success');
+    }
+    
+    setUploading(false);
+    fetchFiles(); // Refresh the list of files
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   if (loading) return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><Loader2 className="spin" size={32} /></div>;
@@ -158,6 +171,7 @@ export default function AdminProjectView() {
               ref={fileInputRef}
               onChange={handleFileUpload}
               accept="application/pdf, video/*"
+              multiple
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: uploading ? 'not-allowed' : 'pointer' }}
               disabled={uploading}
             />
@@ -173,7 +187,7 @@ export default function AdminProjectView() {
             {uploading && (
               <div>
                 <Loader2 size={48} color="#0070f3" className="spin" style={{ marginBottom: '1rem' }} />
-                <h3 style={{ margin: '0 0 0.5rem 0', color: '#333' }}>Uploading directly to Cloudflare R2...</h3>
+                <h3 style={{ margin: '0 0 0.5rem 0', color: '#333' }}>{currentUploadText || 'Uploading to Cloudflare R2...'}</h3>
                 <div style={{ width: '100%', backgroundColor: '#eee', borderRadius: '4px', height: '8px', overflow: 'hidden', marginTop: '1rem' }}>
                   <div style={{ width: `${uploadProgress}%`, backgroundColor: '#0070f3', height: '100%', transition: 'width 0.2s' }}></div>
                 </div>
