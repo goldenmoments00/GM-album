@@ -435,4 +435,15 @@ router.post('/admin/finalize-upload', async (req, res) => {
   }
 });
 
+router.get('/admin/project/:id/files', async (req, res) => {
+  try {
+    const projectId = req.params.id;
+    const albums = await dbService.getProjectFiles(projectId, 'albums');
+    const videos = await dbService.getProjectFiles(projectId, 'videos');
+    res.json({ success: true, albums, videos });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

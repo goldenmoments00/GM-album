@@ -7,11 +7,24 @@ export default function AdminProjectView() {
   const navigate = useNavigate();
   
   const [project, setProject] = useState(null);
+  const [files, setFiles] = useState({ albums: [], videos: [] });
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStatus, setUploadStatus] = useState(''); // 'idle', 'uploading', 'success', 'error'
   const fileInputRef = useRef(null);
+
+  const fetchFiles = async () => {
+    try {
+      const res = await fetch(`/api/admin/project/${id}/files`);
+      const data = await res.json();
+      if (data.success) {
+        setFiles({ albums: data.albums || [], videos: data.videos || [] });
+      }
+    } catch (err) {
+      console.error('Error fetching files:', err);
+    }
+  };
 
   useEffect(() => {
     // Basic auth check
@@ -29,6 +42,8 @@ export default function AdminProjectView() {
         }
         setLoading(false);
       });
+      
+    fetchFiles();
   }, [id, navigate]);
 
   const handleFileUpload = async (e) => {
@@ -104,6 +119,7 @@ export default function AdminProjectView() {
       
       if (finalizeData.success) {
         setUploadStatus('success');
+        fetchFiles(); // Refresh the list of files
       } else {
         throw new Error('Database finalization failed');
       }
@@ -197,6 +213,44 @@ export default function AdminProjectView() {
         <div style={{ backgroundColor: '#fff9c4', padding: '1rem', borderRadius: '8px', borderLeft: '4px solid #fbc02d', color: '#666', fontSize: '0.875rem' }}>
           <strong>Note:</strong> Files uploaded here go directly to Cloudflare R2, completely bypassing Vercel. This guarantees 100% free bandwidth and no timeouts, even for 500MB+ files.
         </div>
+
+        <div style={{ marginTop: '3rem' }}>
+          <h2 style={{ fontSize: '1.5rem', color: '#333', margin: '0 0 1rem 0' }}>Uploaded Files</h2>
+          <div style={{ backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+            {files.albums.length === 0 && files.videos.length === 0 ? (
+              <div style={{ padding: '3rem 2rem', textAlign: 'center', color: '#666' }}>No files uploaded to this project yet.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {[...files.albums, ...files.videos].map((file, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid #eee' }}>
+                    <div style={{ marginRight: '1rem', color: '#0070f3', backgroundColor: '#f0f7ff', padding: '0.5rem', borderRadius: '8px' }}>
+                      {file.type === 'pdf' ? <File size={24} /> : <Video size={24} />}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem' }}>{file.name}</h4>
+                      <div style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.25rem' }}>
+                        Uploaded: {new Date(file.createdAt).toLocaleString()} &bull; {(file.size / 1024 / 1024).toFixed(1)} MB
+                      </div>
+                    </div>
+                    <div style={{ marginLeft: '1rem' }}>
+                      <a 
+                        href={file.url} 
+                        target="_blank" 
+                        rel="noreferrer" 
+                        style={{ display: 'inline-block', padding: '0.5rem 1rem', backgroundColor: '#f5f5f5', color: '#333', textDecoration: 'none', borderRadius: '4px', fontSize: '0.875rem', fontWeight: '500', transition: 'background 0.2s' }}
+                        onMouseOver={(e) => e.target.style.backgroundColor = '#e5e5e5'}
+                        onMouseOut={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                      >
+                        View
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
       </div>
     </div>
   );
