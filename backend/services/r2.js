@@ -57,7 +57,34 @@ async function generatePresignedUploadUrl(fileName, contentType) {
   };
 }
 
+async function uploadBuffer(buffer, mimeType, fileName) {
+  if (!s3Client) {
+    throw new Error('R2 Client is not configured.');
+  }
+
+  const bucketName = process.env.R2_BUCKET_NAME || 'golden-moments';
+  
+  // Create a unique key inside a 'feedback' folder
+  const fileExtension = fileName.split('.').pop() || 'bin';
+  const uniqueKey = `feedback/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
+
+  const command = new PutObjectCommand({
+    Bucket: bucketName,
+    Key: uniqueKey,
+    ContentType: mimeType,
+    Body: buffer,
+  });
+
+  await s3Client.send(command);
+
+  return {
+    url: `${process.env.R2_PUBLIC_DOMAIN || 'YOUR_R2_DEV_DOMAIN'}/${uniqueKey}`,
+    key: uniqueKey
+  };
+}
+
 module.exports = {
   generatePresignedUploadUrl,
+  uploadBuffer,
   isConfigured: () => s3Client !== null
 };

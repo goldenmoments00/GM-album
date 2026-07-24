@@ -226,9 +226,18 @@ router.post('/video/comment', upload.fields([{ name: 'voice' }]), async (req, re
       if (req.files['voice'][0].originalname) {
          extension = req.files['voice'][0].originalname.split('.').pop();
       }
-      const uploadedVoice = await driveService.uploadVideoVoiceNote(folderId, voiceBuffer, voiceMimeType, extension);
-      voiceFileId = uploadedVoice.id;
-      voiceUrl = uploadedVoice.webViewLink;
+
+      // Check if this is an R2 project
+      const project = await dbService.getProjectById(folderId);
+      if (project && project.source === 'r2') {
+        const uploadRes = await r2Service.uploadBuffer(voiceBuffer, voiceMimeType, `voice.${extension}`);
+        voiceFileId = uploadRes.key;
+        voiceUrl = uploadRes.url;
+      } else {
+        const uploadedVoice = await driveService.uploadVideoVoiceNote(folderId, voiceBuffer, voiceMimeType, extension);
+        voiceFileId = uploadedVoice.id;
+        voiceUrl = uploadedVoice.webViewLink;
+      }
     }
 
     const comments = await dbService.addVideoComment(folderId, fileId, parseFloat(timestamp), commentText, voiceFileId, voiceUrl);
@@ -272,37 +281,63 @@ router.post('/reviews/upload', upload.fields([{ name: 'screenshot' }, { name: 'v
   try {
     const { folderId, albumId, pageNumber, comment, createdBy } = req.body;
     
-    // 1. Find or create the Reviews folder
-    const reviewsFolderId = await driveService.findOrCreateReviewsFolder(folderId);
-    
-    // 2. Create the Review-XXX folder
-    const { folderId: reviewFolderId, reviewNumber } = await driveService.createNewReviewFolder(reviewsFolderId);
-    
-    // 3. Upload assets
     const screenshotFile = req.files && req.files['screenshot'] ? req.files['screenshot'][0] : null;
     const voiceFile = req.files && req.files['voice'] ? req.files['voice'][0] : null;
     
     const screenshotBuffer = screenshotFile ? screenshotFile.buffer : null;
     const voiceBuffer = voiceFile ? voiceFile.buffer : null;
     
-    const options = {
-      screenshotMimeType: screenshotFile ? screenshotFile.mimetype : undefined,
-      screenshotName: screenshotFile ? screenshotFile.originalname : undefined,
-      voiceMimeType: voiceFile ? voiceFile.mimetype : undefined,
-      voiceName: voiceFile ? voiceFile.originalname : undefined,
-    };
+    let screenshotId = null;
+    let screenshotUrl = null;
+    let voiceId = null;
+    let voiceUrl = null;
+    let reviewNumber = Date.now();
 
-    const assets = await driveService.uploadReviewAssets(reviewFolderId, screenshotBuffer, voiceBuffer, options);
+    const project = await dbService.getProjectById(folderId);
+
+    if (project && project.source === 'r2') {
+       if (screenshotBuffer) {
+         const uploadRes = await r2Service.uploadBuffer(screenshotBuffer, screenshotFile.mimetype || 'image/png', screenshotFile.originalname || 'screenshot.png');
+         screenshotId = uploadRes.key;
+         screenshotUrl = uploadRes.url;
+       }
+       if (voiceBuffer) {
+         const uploadRes = await r2Service.uploadBuffer(voiceBuffer, voiceFile.mimetype || 'audio/webm', voiceFile.originalname || 'voice.webm');
+         voiceId = uploadRes.key;
+         voiceUrl = uploadRes.url;
+       }
+    } else {
+      // 1. Find or create the Reviews folder
+      const reviewsFolderId = await driveService.findOrCreateReviewsFolder(folderId);
+      
+      // 2. Create the Review-XXX folder
+      const reviewInfo = await driveService.createNewReviewFolder(reviewsFolderId);
+      reviewNumber = reviewInfo.reviewNumber;
+      
+      const options = {
+        screenshotMimeType: screenshotFile ? screenshotFile.mimetype : undefined,
+        screenshotName: screenshotFile ? screenshotFile.originalname : undefined,
+        voiceMimeType: voiceFile ? voiceFile.mimetype : undefined,
+        voiceName: voiceFile ? voiceFile.originalname : undefined,
+      };
+
+      const assets = await driveService.uploadReviewAssets(reviewInfo.folderId, screenshotBuffer, voiceBuffer, options);
+      
+      screenshotId = assets.screenshot ? assets.screenshot.id : null;
+      screenshotUrl = assets.screenshot ? assets.screenshot.webViewLink : null;
+      voiceId = assets.voice ? assets.voice.id : null;
+      voiceUrl = assets.voice ? assets.voice.webViewLink : null;
+    }
     
     // 4. Save metadata to Firestore
     const reviewData = {
       albumId,
       projectFolderId: folderId,
       pageNumber: parseInt(pageNumber),
-      googleDriveScreenshotFileId: assets.screenshot ? assets.screenshot.id : null,
-      googleDriveVoiceFileId: assets.voice ? assets.voice.id : null,
-      googleDriveScreenshotUrl: assets.screenshot ? assets.screenshot.webViewLink : null,
-      googleDriveVoiceUrl: assets.voice ? assets.voice.webViewLink : null,
+      googleDriveScreenshotFileId: screenshotId,
+      googleDriveVoiceFileId: voiceId,
+      googleDriveScreenshotUrl: screenshotUrl,
+      googleDriveVoiceUrl: voiceUrl,
       comment: comment || '',
       status: 'Pending',
       createdBy: createdBy || 'Client',
