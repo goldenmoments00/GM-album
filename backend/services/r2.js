@@ -28,9 +28,11 @@ try {
  * Generates a presigned URL that the frontend can use to upload directly to R2.
  * @param {string} fileName The name of the file to be uploaded.
  * @param {string} contentType The MIME type of the file.
+ * @param {string} projectId The project ID.
+ * @param {string} category The category of the file (e.g., 'Album', 'Reels').
  * @returns {Promise<{url: string, key: string}>}
  */
-async function generatePresignedUploadUrl(fileName, contentType) {
+async function generatePresignedUploadUrl(fileName, contentType, projectId = 'uploads', category = 'general') {
   if (!s3Client) {
     throw new Error('R2 Client is not configured. Missing environment variables.');
   }
@@ -39,7 +41,9 @@ async function generatePresignedUploadUrl(fileName, contentType) {
   
   // Create a unique key (path) for the file in the bucket to prevent overwriting
   const fileExtension = fileName.split('.').pop();
-  const uniqueKey = `uploads/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExtension}`;
+  const safeCategory = category.replace(/[^a-zA-Z0-9-]/g, '-').toLowerCase();
+  const safeFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+  const uniqueKey = `projects/${projectId}/${safeCategory}/${Date.now()}-${safeFileName}`;
 
   const command = new PutObjectCommand({
     Bucket: bucketName,

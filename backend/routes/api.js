@@ -454,8 +454,8 @@ router.post('/admin/projects', async (req, res) => {
 
 router.post('/admin/upload-url', async (req, res) => {
   try {
-    const { fileName, fileType } = req.body;
-    const urlData = await r2Service.generatePresignedUploadUrl(fileName, fileType);
+    const { fileName, fileType, projectId, category } = req.body;
+    const urlData = await r2Service.generatePresignedUploadUrl(fileName, fileType, projectId, category);
     res.json(urlData);
   } catch (err) {
     res.status(500).json({ error: err.message });

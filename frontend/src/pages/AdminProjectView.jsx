@@ -77,7 +77,7 @@ export default function AdminProjectView() {
         const urlRes = await fetch('/api/admin/upload-url', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: file.name, fileType: file.type })
+          body: JSON.stringify({ fileName: file.name, fileType: file.type, projectId: id, category: uploadCategory })
         });
         
         const { uploadUrl, key, publicUrl } = await urlRes.json();
