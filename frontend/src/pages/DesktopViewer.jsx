@@ -82,6 +82,9 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
   const [screenSize, setScreenSize] = useState({ w: window.innerWidth, h: window.innerHeight });
   const [immersiveMode, setImmersiveMode] = useState(false);
   const [showAnnotationEditor, setShowAnnotationEditor] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(() => {
+    return localStorage.getItem('hasSeenAlbumTutorial') !== 'true';
+  });
   const [randomQuote] = useState(() => goldenQuotes[Math.floor(Math.random() * goldenQuotes.length)]);
   
   const bookRef = useRef();
@@ -586,6 +589,66 @@ export default function DesktopViewer({ pages, dimensions, session, fileId }) {
 
 
 
+
+      {/* First Time Tutorial Overlay */}
+      {showTutorial && (
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 10000,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          color: 'white', padding: '20px', backdropFilter: 'blur(5px)',
+          pointerEvents: 'auto'
+        }}>
+          <h2 style={{ fontSize: '2.2rem', marginBottom: '30px', fontFamily: 'var(--font-heading)', color: 'var(--color-gold)', textAlign: 'center', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>Welcome to your Album!</h2>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', maxWidth: '400px', marginBottom: '50px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.1)', padding: '12px', borderRadius: '50%' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Swipe to Flip</h4>
+                <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#ddd' }}>Swipe left or right to flip through the album pages.</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.1)', padding: '12px', borderRadius: '50%', color: 'var(--color-primary)' }}>
+                <MessageSquare size={24} fill="var(--color-primary)" />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Suggest Changes</h4>
+                <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#ddd' }}>Tap to draw on pages, add notes, or record voice memos.</p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.1)', padding: '12px', borderRadius: '50%' }}>
+                <Check size={24} color="var(--color-success)" />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Approve Album</h4>
+                <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#ddd' }}>Once everything looks perfect, approve to finalize.</p>
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            onClick={() => {
+              localStorage.setItem('hasSeenAlbumTutorial', 'true');
+              setShowTutorial(false);
+            }}
+            style={{ 
+              background: 'var(--color-gold)', color: '#1a120b', border: 'none',
+              fontSize: '1.1rem', padding: '15px 40px', borderRadius: '30px', 
+              boxShadow: '0 4px 15px rgba(197, 160, 89, 0.4)', textTransform: 'uppercase', 
+              letterSpacing: '1px', fontWeight: 'bold', cursor: 'pointer'
+            }}
+          >
+            Got it, let's go!
+          </button>
+        </div>
+      )}
 
       {/* Mobile Annotation Editor */}
       {showAnnotationEditor && (

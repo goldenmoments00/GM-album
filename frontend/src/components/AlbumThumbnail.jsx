@@ -5,11 +5,17 @@ import { BookOpen } from 'lucide-react';
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
-export default function AlbumThumbnail({ folderId, fileName }) {
-  const [thumbnail, setThumbnail] = useState(null);
-  const [loading, setLoading] = useState(true);
+export default function AlbumThumbnail({ folderId, fileName, thumbnailUrl }) {
+  const [thumbnail, setThumbnail] = useState(thumbnailUrl || null);
+  const [loading, setLoading] = useState(!thumbnailUrl);
 
   useEffect(() => {
+    if (thumbnailUrl) {
+      setThumbnail(thumbnailUrl);
+      setLoading(false);
+      return;
+    }
+
     let isMounted = true;
     
     const loadThumbnail = async () => {
@@ -47,7 +53,7 @@ export default function AlbumThumbnail({ folderId, fileName }) {
     return () => {
       isMounted = false;
     };
-  }, [folderId, fileName]);
+  }, [folderId, fileName, thumbnailUrl]);
 
   if (loading || !thumbnail) {
     return (

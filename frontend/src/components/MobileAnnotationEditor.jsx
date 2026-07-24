@@ -394,6 +394,11 @@ export default function MobileAnnotationEditor({
         setVoiceBlob(audioBlob);
         setVoiceUrl(URL.createObjectURL(audioBlob));
         stream.getTracks().forEach(track => track.stop());
+        
+        // Auto-save the voice immediately
+        if (handleSaveRef.current) {
+          handleSaveRef.current(audioBlob);
+        }
       };
       
       mediaRecorder.start();
@@ -441,7 +446,10 @@ export default function MobileAnnotationEditor({
     return `${m}:${s}`;
   };
 
-  const handleSave = async () => {
+  // Using a ref to always access the latest handleSave and state in listeners
+  const handleSaveRef = useRef();
+  
+  const handleSave = async (autoSaveBlob = null) => {
     if (!bgCanvas || isSaving) return;
     setIsSaving(true);
     
@@ -508,11 +516,13 @@ export default function MobileAnnotationEditor({
       const formData = new FormData();
       formData.append('screenshot', blob, 'screenshot.jpg');
       
-      if (voiceBlob) {
-        const ext = voiceBlob.type.includes('mp4') ? 'mp4' : 
-                    voiceBlob.type.includes('webm') ? 'webm' : 
-                    voiceBlob.type.includes('ogg') ? 'ogg' : 'm4a';
-        formData.append('voice', voiceBlob, `voice.${ext}`);
+      const finalVoiceBlob = autoSaveBlob || voiceBlob;
+      
+      if (finalVoiceBlob) {
+        const ext = finalVoiceBlob.type.includes('mp4') ? 'mp4' : 
+                    finalVoiceBlob.type.includes('webm') ? 'webm' : 
+                    finalVoiceBlob.type.includes('ogg') ? 'ogg' : 'm4a';
+        formData.append('voice', finalVoiceBlob, `voice.${ext}`);
       }
       
       formData.append('folderId', metadata.folderId || '');
@@ -541,6 +551,19 @@ export default function MobileAnnotationEditor({
       }
     }, 'image/jpeg', 0.7);
   };
+  
+  useEffect(() => { handleSaveRef.current = handleSave; }, [handleSave]);
+
+  const handleBackOrClose = () => {
+    if (isRecording) {
+      stopRecording();
+      // stopRecording triggers onstop, which will trigger handleSave automatically!
+    } else if (voiceBlob || paths.length > 0 || comment) {
+      handleSave();
+    } else {
+      onClose();
+    }
+  };
 
   // Determine if portrait
   const isPortraitScreen = typeof window !== 'undefined' && window.innerWidth < 768 && window.innerHeight > window.innerWidth;
@@ -560,10 +583,12 @@ export default function MobileAnnotationEditor({
       {/* Top Toolbar */}
       <div style={{
         height: '50px', backgroundColor: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(10px)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 10px',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        paddingLeft: isPortraitScreen ? '50px' : '10px',
+        paddingRight: isPortraitScreen ? '40px' : '10px',
         color: 'white', borderBottom: '1px solid rgba(255,255,255,0.1)', flexShrink: 0
       }}>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'white', padding: '8px' }}>
+        <button onClick={handleBackOrClose} style={{ background: 'none', border: 'none', color: 'white', padding: '8px' }}>
           <X size={22} />
         </button>
         
@@ -598,7 +623,9 @@ export default function MobileAnnotationEditor({
           {/* Bottom Tools Toolbar — single compact row */}
           <div ref={bottomToolbarRef} style={{
             backgroundColor: 'rgba(20,20,20,0.95)', backdropFilter: 'blur(10px)', 
-            padding: '8px 10px',
+            paddingTop: '8px', paddingBottom: '8px',
+            paddingLeft: isPortraitScreen ? '50px' : '10px',
+            paddingRight: isPortraitScreen ? '40px' : '10px',
             borderTop: '1px solid rgba(255,255,255,0.1)', 
             display: 'flex', alignItems: 'center', gap: '8px',
             overflowX: 'auto', flexShrink: 0
@@ -631,15 +658,19 @@ export default function MobileAnnotationEditor({
             {/* Add Comment Button */}
             <button 
               onClick={() => setShowCommentModal(true)}
+              className={!(comment || voiceBlob) ? "btn-pulse-gold" : ""}
               style={{
-                background: (comment || voiceBlob) ? 'rgba(234, 179, 8, 0.2)' : 'none',
-                border: 'none',
-                color: (comment || voiceBlob) ? 'var(--color-gold)' : 'white',
-                padding: '8px', borderRadius: '8px', minWidth: '36px',
-                display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0
+                background: 'var(--color-gold)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                color: '#1a120b',
+                padding: '8px 16px', borderRadius: '24px',
+                display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', flexShrink: 0,
+                fontWeight: 'bold', fontSize: '0.9rem',
+                boxShadow: '0 4px 15px rgba(197, 160, 89, 0.3)'
               }}
             >
-              <MessageSquare size={18} />
+              <Mic size={16} fill="#1a120b" strokeWidth={2} /> 
+              {comment || voiceBlob ? 'Edit Note' : 'Add Note / Voice'}
             </button>
 
             {/* Divider */}
@@ -697,7 +728,10 @@ export default function MobileAnnotationEditor({
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h3 style={{ color: 'white', margin: 0, fontSize: '1.2rem' }}>Add Note & Voice</h3>
-          <button onClick={() => setShowCommentModal(false)} style={{ background: 'none', border: 'none', color: '#aaa', padding: '5px' }}>
+          <button onClick={() => {
+            setShowCommentModal(false);
+            if (isRecording) stopRecording(); // auto saves
+          }} style={{ background: 'none', border: 'none', color: '#aaa', padding: '5px' }}>
             <X size={20} />
           </button>
         </div>
@@ -766,7 +800,10 @@ export default function MobileAnnotationEditor({
         </div>
         
         <button 
-          onClick={() => setShowCommentModal(false)}
+          onClick={() => {
+            setShowCommentModal(false);
+            if (isRecording) stopRecording(); // auto saves
+          }}
           style={{
             width: '100%', padding: '12px', borderRadius: '8px',
             backgroundColor: 'var(--color-primary)', color: 'white',

@@ -206,6 +206,52 @@ export default function Dashboard({ session }) {
         ))}
       </div>
 
+      {activeTab === 'Full event video' && (
+        <div style={{ 
+          backgroundColor: 'rgba(139, 21, 26, 0.05)', 
+          borderLeft: '4px solid var(--color-primary)', 
+          padding: '20px', 
+          borderRadius: '8px', 
+          marginBottom: '30px', 
+          color: 'var(--color-text-main)', 
+          fontSize: '0.95rem', 
+          lineHeight: '1.6',
+          maxWidth: '1200px',
+          margin: '0 auto 30px auto'
+        }}>
+          <strong style={{ color: 'var(--color-primary)', fontSize: '1.05rem' }}>N.B. Note:</strong> This preview video is provided <strong>only for review and correction purposes</strong>. Please note that the video is <strong>not color graded</strong>, and the final version will have professional color grading and finishing.<br/><br/>
+          If you have any corrections or changes, kindly mention them. If no changes are required, please <strong>approve the preview</strong> so we can proceed with the final delivery.
+        </div>
+      )}
+
+      {activeTab === 'Album' && (
+        <div style={{ 
+          backgroundColor: 'rgba(139, 21, 26, 0.05)', 
+          borderLeft: '4px solid var(--color-primary)', 
+          padding: '20px', 
+          borderRadius: '8px', 
+          marginBottom: '30px', 
+          color: 'var(--color-text-main)', 
+          fontSize: '0.95rem', 
+          lineHeight: '1.6',
+          maxWidth: '1200px',
+          margin: '0 auto 30px auto'
+        }}>
+          <strong style={{ color: 'var(--color-primary)', fontSize: '1.05rem' }}>N.B.</strong> Kindly review your album carefully and check the following details:<br/><br/>
+          
+          <ul style={{ listStyleType: 'none', paddingLeft: 0, margin: '0 0 15px 0' }}>
+            <li style={{ marginBottom: '8px' }}>✍️ Name spellings</li>
+            <li style={{ marginBottom: '8px' }}>🖼️ Photo selection and positioning</li>
+            <li style={{ marginBottom: '8px' }}>📖 Photo sequence and layout</li>
+            <li style={{ marginBottom: '8px' }}>📝 Quotes, captions, and text</li>
+            <li style={{ marginBottom: '8px' }}>✅ All other design details</li>
+          </ul>
+
+          If everything looks correct, please <strong>approve the album</strong>.<br/><br/>
+          If you notice any changes or corrections, kindly mention them clearly before giving your approval.
+        </div>
+      )}
+
       {/* Tab Content */}
       <div style={{ 
         display: 'grid', 
@@ -220,8 +266,9 @@ export default function Dashboard({ session }) {
           
           if (catFiles.length === 0) {
             return (
-              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                No files available for {activeTab}.
+              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '1.1rem', padding: '40px 20px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '12px' }}>
+                Your {activeTab} is currently empty. <br/><br/>
+                Please ask our team to add your files by calling <a href="tel:6009426410" style={{ color: 'var(--color-gold)', fontWeight: 'bold', textDecoration: 'none' }}>6009426410</a>
               </p>
             );
           }
@@ -234,14 +281,14 @@ export default function Dashboard({ session }) {
 
             if (isAlbum) {
               return (
-                <button key={index} style={{ 
+                <button key={index} className="album-thumbnail-btn" style={{ 
                   display: 'flex', flexDirection: 'column', cursor: 'pointer', background: 'none',
-                  border: 'none', padding: 0, textAlign: 'inherit', width: '100%'
+                  border: 'none', padding: 0, textAlign: 'inherit', width: '100%', outline: 'none'
                 }} onClick={() => handleOpenAlbum(file.file)}>
-                  <div style={{ width: '100%', overflow: 'hidden', borderRadius: '12px' }}>
-                    <AlbumThumbnail folderId={folderId} fileName={file.file} />
+                  <div className="album-thumb-container" style={{ width: '100%', overflow: 'visible', borderRadius: '12px' }}>
+                    <AlbumThumbnail folderId={folderId} fileName={file.file} thumbnailUrl={file.thumbnail} />
                   </div>
-                  <div style={{ marginTop: '15px', textAlign: 'left' }}>
+                  <div style={{ marginTop: '15px', textAlign: 'left', paddingLeft: '4px' }}>
                     <span style={{ color: 'var(--color-primary)', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
                       {status}
                     </span>
@@ -255,44 +302,61 @@ export default function Dashboard({ session }) {
 
             // Video item
             return (
-              <button key={index} style={{ 
+              <button key={index} className="video-thumbnail-btn" style={{ 
                 display: 'flex', flexDirection: 'column', cursor: 'pointer', background: 'none',
-                border: 'none', padding: 0, textAlign: 'inherit', width: '100%'
+                border: 'none', padding: 0, textAlign: 'inherit', width: '100%', outline: 'none'
               }} onClick={() => handleOpenVideo(file.file)}>
-                <div style={{ 
-                  width: '100%', aspectRatio: '16/9', backgroundColor: '#111', 
-                  borderRadius: '12px', overflow: 'hidden', position: 'relative',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                <div className="video-thumb-container" style={{ 
+                  width: '100%', aspectRatio: '16/9', 
+                  background: 'linear-gradient(135deg, var(--color-primary-dark) 0%, #111 100%)', 
+                  borderRadius: '16px', overflow: 'hidden', position: 'relative',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
+                  border: '1px solid rgba(255,255,255,0.05)',
                 }}>
+                  {/* Cinematic Light Leak */}
+                  <div className="light-leak" style={{
+                    position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%',
+                    background: 'radial-gradient(circle at 50% 50%, rgba(139, 21, 26, 0.5) 0%, transparent 60%)',
+                    pointerEvents: 'none', opacity: 0.6,
+                    transition: 'all 0.5s ease'
+                  }}></div>
+
                   <div style={{ 
-                    width: '100%', height: '100%', backgroundColor: '#8a1212',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    padding: '20px', textAlign: 'center', border: '1px solid rgba(0,0,0,0.05)'
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0) 100%)',
+                    padding: '40px 20px 20px', display: 'flex', alignItems: 'flex-end',
+                    zIndex: 2, height: '100%'
                   }}>
                     <h2 style={{ 
                       color: '#ffffff', fontFamily: 'var(--font-heading)', 
-                      fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', textTransform: 'uppercase',
-                      margin: 0, opacity: 0.95
+                      fontSize: 'clamp(1.2rem, 2.5vw, 1.8rem)', textTransform: 'uppercase',
+                      margin: 0, opacity: 0.95, textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                      letterSpacing: '1px', lineHeight: 1.2,
+                      display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden'
                     }}>
                       {file.title}
                     </h2>
                   </div>
+
                   <div style={{ 
                     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
-                    background: 'rgba(0,0,0,0.1)', display: 'flex', 
-                    alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s ease'
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    zIndex: 3
                   }}>
-                    <div style={{ 
-                      width: '60px', height: '60px', borderRadius: '50%', 
-                      backgroundColor: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(4px)', 
+                    <div className="play-btn-glass" style={{ 
+                      width: '64px', height: '64px', borderRadius: '50%', 
+                      background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(8px)',
+                      WebkitBackdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(255,255,255,0.2)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)', paddingLeft: '4px' 
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 0 20px rgba(255,255,255,0.05)',
+                      paddingLeft: '4px', transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
                     }}>
-                      <Play size={28} color="#fff" fill="#fff" />
+                      <Play size={30} color="#fff" fill="#fff" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))' }} />
                     </div>
                   </div>
                 </div>
-                <div style={{ marginTop: '15px', textAlign: 'left' }}>
+                <div style={{ marginTop: '15px', textAlign: 'left', paddingLeft: '4px' }}>
                   <span style={{ color: 'var(--color-primary)', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
                     {status}
                   </span>

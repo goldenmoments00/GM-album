@@ -196,12 +196,13 @@ async function getAlbumsInFolder(folderId) {
     const query = `'${folderId}' in parents and mimeType = 'application/pdf' and trashed = false`;
     const res = await driveApi.files.list({
       q: query,
-      fields: 'files(id, name)',
+      fields: 'files(id, name, thumbnailLink)',
     });
 
     return res.data.files.map(file => ({
       title: file.name.replace(/\.pdf$/i, ''),
-      file: file.name
+      file: file.name,
+      thumbnail: file.thumbnailLink ? file.thumbnailLink.replace(/=s\d+/, '=s600') : null
     }));
   } catch (error) {
     console.error('Error getting albums:', error);
@@ -242,10 +243,21 @@ async function streamPdf(folderId, fileName, res, rangeHeader) {
     }
 
     const fileId = searchRes.data.files[0].id;
+    const fileSize = searchRes.data.files[0].size;
     
+    let start = 0;
+    let end = parseInt(fileSize) - 1;
+
+    if (rangeHeader) {
+      const parts = rangeHeader.replace(/bytes=/, "").split("-");
+      start = parseInt(parts[0], 10);
+      end = parts[1] ? parseInt(parts[1], 10) : end;
+    }
+    
+    const chunksize = (end - start) + 1;
     const requestHeaders = {};
     if (rangeHeader) {
-      requestHeaders['Range'] = rangeHeader;
+      requestHeaders['Range'] = `bytes=${start}-${end}`;
     }
 
     // Stream the file with Range support
@@ -256,14 +268,17 @@ async function streamPdf(folderId, fileName, res, rangeHeader) {
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=86400');
     
-    // Proxy the Google Drive range headers back to the client
-    if (fileRes.headers['content-range']) {
+    if (rangeHeader) {
       res.status(206);
-      res.setHeader('Content-Range', fileRes.headers['content-range']);
-    }
-    if (fileRes.headers['content-length']) {
-      res.setHeader('Content-Length', fileRes.headers['content-length']);
+      res.setHeader('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+      res.setHeader('Content-Length', chunksize);
+    } else {
+      res.status(200);
+      if (fileSize) {
+        res.setHeader('Content-Length', fileSize);
+      }
     }
 
     fileRes.data
@@ -375,6 +390,7 @@ async function streamVideo(folderId, fileName, res, rangeHeader) {
 
     res.setHeader('Content-Type', mimeType);
     res.setHeader('Accept-Ranges', 'bytes');
+    res.setHeader('Cache-Control', 'public, max-age=86400, s-maxage=86400, stale-while-revalidate=86400');
     
     if (rangeHeader) {
       res.status(206);

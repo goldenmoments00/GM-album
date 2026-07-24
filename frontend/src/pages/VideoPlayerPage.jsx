@@ -13,6 +13,9 @@ export default function VideoPlayerPage({ session }) {
   const [newComment, setNewComment] = useState('');
   const [currentTimestamp, setCurrentTimestamp] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(() => {
+    return localStorage.getItem('hasSeenVideoTutorial') !== 'true';
+  });
 
   // Audio Recording State
   const [isRecording, setIsRecording] = useState(false);
@@ -221,6 +224,66 @@ export default function VideoPlayerPage({ session }) {
 
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
+      
+      {/* First Time Tutorial Overlay */}
+      {showTutorial && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.85)', zIndex: 10000,
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          color: 'white', padding: '20px', backdropFilter: 'blur(5px)'
+        }}>
+          <h2 style={{ fontSize: '2.2rem', marginBottom: '30px', fontFamily: 'var(--font-heading)', color: 'var(--color-gold)', textAlign: 'center', textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}>Welcome to Video Review!</h2>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '25px', maxWidth: '400px', marginBottom: '50px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.1)', padding: '12px', borderRadius: '50%' }}>
+                <Play size={24} color="#fff" fill="#fff" />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Play & Pause</h4>
+                <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#ddd' }}>Pause the video at the exact moment you want to discuss.</p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.1)', padding: '12px', borderRadius: '50%', color: 'var(--color-primary)' }}>
+                <Mic size={24} fill="var(--color-primary)" />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Leave Feedback</h4>
+                <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#ddd' }}>Type a comment or record a voice note for that timestamp.</p>
+              </div>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+              <div style={{ background: 'rgba(255,255,255,0.1)', padding: '12px', borderRadius: '50%' }}>
+                <Check size={24} color="var(--color-success)" />
+              </div>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '1.2rem', color: '#fff', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>Approve Video</h4>
+                <p style={{ margin: '4px 0 0', fontSize: '0.9rem', color: '#ddd' }}>Once everything looks perfect, approve to finalize.</p>
+              </div>
+            </div>
+          </div>
+          
+          <button 
+            onClick={() => {
+              localStorage.setItem('hasSeenVideoTutorial', 'true');
+              setShowTutorial(false);
+            }}
+            style={{ 
+              background: 'var(--color-gold)', color: '#1a120b', border: 'none',
+              fontSize: '1.1rem', padding: '15px 40px', borderRadius: '30px', 
+              boxShadow: '0 4px 15px rgba(197, 160, 89, 0.4)', textTransform: 'uppercase', 
+              letterSpacing: '1px', fontWeight: 'bold', cursor: 'pointer'
+            }}
+          >
+            Got it, let's go!
+          </button>
+        </div>
+      )}
+
       {/* Top Bar */}
       <div style={{ width: '100%', display: 'flex', flexWrap: 'nowrap', gap: '8px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
         <button className="btn-outline" style={{ display: 'flex', gap: '4px', alignItems: 'center', whiteSpace: 'nowrap', padding: '8px 12px', fontSize: '0.8rem', flex: 1, justifyContent: 'center' }} onClick={() => navigate('/dashboard')}>

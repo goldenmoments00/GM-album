@@ -92,6 +92,17 @@ h6 {
   position: relative;
 }
 
+@keyframes pulse-gold {
+  0% { box-shadow: 0 0 0 0 rgba(197, 160, 89, 0.6); transform: scale(1); }
+  50% { box-shadow: 0 0 0 10px rgba(197, 160, 89, 0); transform: scale(1.02); }
+  100% { box-shadow: 0 0 0 0 rgba(197, 160, 89, 0); transform: scale(1); }
+}
+
+.btn-pulse-gold {
+  animation: pulse-gold 2s infinite cubic-bezier(0.66, 0, 0, 1);
+  position: relative;
+}
+
 /* Buttons */
 .btn-primary, .btn-gold {
   background: var(--color-primary);
@@ -307,3 +318,44 @@ h6 {
   animation: skeleton-loading 1.5s infinite ease-in-out;
   border-radius: 12px;
 }
+
+/* Video Thumbnail Hover Effects */
+.video-thumbnail-btn {
+  transition: transform 0.2s ease;
+}
+
+.video-thumb-container {
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+}
+
+.video-thumbnail-btn:hover .video-thumb-container {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(139, 21, 26, 0.25) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.video-thumbnail-btn:hover .light-leak {
+  opacity: 1 !important;
+  transform: scale(1.1);
+}
+
+.video-thumbnail-btn:hover .play-btn-glass {
+  background: rgba(255, 255, 255, 0.25) !important;
+  transform: scale(1.15);
+  box-shadow: 0 10px 40px rgba(139, 21, 26, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Album Thumbnail Hover Effects */
+.album-thumbnail-btn {
+  transition: transform 0.2s ease;
+}
+
+.album-thumbnail-btn > .album-thumb-container {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.album-thumbnail-btn:hover > .album-thumb-container {
+  transform: translateY(-5px) scale(1.02);
+}
+
