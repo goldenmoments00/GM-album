@@ -222,19 +222,18 @@ export default function VideoPlayerPage({ session }) {
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px' }}>
       {/* Top Bar */}
-      <div style={{ width: '100%', display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-        <button className="btn-outline" style={{ display: 'flex', gap: '8px', alignItems: 'center', whiteSpace: 'nowrap' }} onClick={() => navigate('/dashboard')}>
-          <ArrowLeft size={16} /> Back to Dashboard
+      <div style={{ width: '100%', display: 'flex', flexWrap: 'nowrap', gap: '8px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+        <button className="btn-outline" style={{ display: 'flex', gap: '4px', alignItems: 'center', whiteSpace: 'nowrap', padding: '8px 12px', fontSize: '0.8rem', flex: 1, justifyContent: 'center' }} onClick={() => navigate('/dashboard')}>
+          <ArrowLeft size={14} /> Back
         </button>
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-
-          <button className="btn-outline" onClick={() => updateStatus('Needs Changes')} style={{ display: 'flex', gap: '5px', alignItems: 'center', whiteSpace: 'nowrap' }}>
-            <AlertCircle size={16} /> Needs Changes
-          </button>
-          <button className="btn-primary" onClick={() => updateStatus('Approved')} style={{ display: 'flex', gap: '5px', alignItems: 'center', whiteSpace: 'nowrap' }}>
-            <Check size={16} /> Approve Video
-          </button>
-        </div>
+        
+        <button className="btn-outline" onClick={() => updateStatus('Needs Changes')} style={{ display: 'flex', gap: '4px', alignItems: 'center', whiteSpace: 'nowrap', padding: '8px 12px', fontSize: '0.8rem', flex: 1, justifyContent: 'center' }}>
+          <AlertCircle size={14} /> Changes
+        </button>
+        
+        <button className="btn-primary" onClick={() => updateStatus('Approved')} style={{ display: 'flex', gap: '4px', alignItems: 'center', whiteSpace: 'nowrap', padding: '8px 12px', fontSize: '0.8rem', flex: 1, justifyContent: 'center' }}>
+          <Check size={14} /> Approve
+        </button>
       </div>
 
       <h1 style={{ width: '100%', textAlign: 'center', marginBottom: '20px', fontSize: 'clamp(1.4rem, 4vw, 2.2rem)', wordBreak: 'break-word' }}>{fileId.replace(/\.(mp4|mov)$/i, '')}</h1>
