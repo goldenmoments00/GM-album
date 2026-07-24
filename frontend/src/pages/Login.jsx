@@ -188,7 +188,7 @@ export default function Login({ onLogin }) {
               </>
             ) : (
               <>
-                <span>View Album</span>
+                <span>View Project</span>
                 <ChevronRight size={19} strokeWidth={3} />
               </>
             )}
