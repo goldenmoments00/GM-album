@@ -574,12 +574,12 @@ export default function MobileAnnotationEditor({
           <button onClick={clear} disabled={paths.length === 0} style={{ background: 'none', border: 'none', color: paths.length ? '#e74c3c' : '#555', padding: '8px' }}><Trash2 size={20} /></button>
         </div>
         
-        <button onClick={handleSave} disabled={isSaving} style={{ 
+        <button onClick={handleSave} disabled={isSaving || isRecording} style={{ 
           background: 'var(--color-gold)', border: 'none', color: '#1a120b', 
           padding: '6px 14px', borderRadius: '20px', fontWeight: 'bold', display: 'flex', gap: '5px', alignItems: 'center', fontSize: '0.85rem',
-          opacity: isSaving ? 0.7 : 1, cursor: isSaving ? 'wait' : 'pointer'
+          opacity: (isSaving || isRecording) ? 0.7 : 1, cursor: (isSaving || isRecording) ? 'wait' : 'pointer'
         }}>
-          <MessageSquare size={14} /> {isSaving ? 'Saving...' : 'Save & Share'}
+          <MessageSquare size={14} /> {isSaving ? 'Saving...' : (isRecording ? 'Stop Recording First' : 'Save & Share')}
         </button>
       </div>
 

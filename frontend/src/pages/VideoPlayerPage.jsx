@@ -277,8 +277,8 @@ export default function VideoPlayerPage({ session }) {
                   <Mic size={18} />
                 </button>
               )}
-              <button type="submit" disabled={isSubmitting || (!newComment.trim() && !voiceBlob)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px', opacity: isSubmitting || (!newComment.trim() && !voiceBlob) ? 0.5 : 1, cursor: isSubmitting || (!newComment.trim() && !voiceBlob) ? 'not-allowed' : 'pointer' }}>
-                <Send size={16} /> {isSubmitting ? 'SENDING...' : 'SEND'}
+              <button type="submit" disabled={isSubmitting || isRecording || (!newComment.trim() && !voiceBlob)} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '5px', opacity: (isSubmitting || isRecording || (!newComment.trim() && !voiceBlob)) ? 0.5 : 1, cursor: (isSubmitting || isRecording || (!newComment.trim() && !voiceBlob)) ? 'not-allowed' : 'pointer' }}>
+                <Send size={16} /> {isSubmitting ? 'SENDING...' : (isRecording ? 'STOP MIC' : 'SEND')}
               </button>
             </div>
 
