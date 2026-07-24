@@ -11,8 +11,9 @@ export default function AdminProjectView() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState(''); // 'idle', 'uploading', 'success', 'error'
+  const [uploadStatus, setUploadStatus] = useState('idle'); // 'idle', 'uploading', 'success', 'error'
   const [currentUploadText, setCurrentUploadText] = useState('');
+  const [uploadCategory, setUploadCategory] = useState('Album');
   const fileInputRef = useRef(null);
 
   const fetchFiles = async () => {
@@ -119,7 +120,8 @@ export default function AdminProjectView() {
               name: file.name,
               type: typeStr,
               url: publicUrl,
-              size: file.size
+              size: file.size,
+              category: uploadCategory
             }
           })
         });
@@ -165,12 +167,34 @@ export default function AdminProjectView() {
           <h1 style={{ margin: '0 0 0.5rem 0', color: '#333' }}>{project.name}</h1>
           <p style={{ margin: '0 0 2rem 0', color: '#666' }}>Client Password: <strong>{project.password}</strong></p>
 
+          <div style={{ marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <label style={{ fontWeight: 'bold', color: '#333' }}>Select Category for Upload</label>
+            <select 
+              value={uploadCategory}
+              onChange={(e) => setUploadCategory(e.target.value)}
+              disabled={uploading}
+              style={{
+                padding: '10px',
+                borderRadius: '6px',
+                border: '1px solid #ccc',
+                fontSize: '1rem',
+                backgroundColor: '#fff',
+                cursor: uploading ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <option value="Album">Album (PDF)</option>
+              <option value="Full event video">Full event video (MP4)</option>
+              <option value="Highlight video">Highlight video (MP4)</option>
+              <option value="Reels">Reels (MP4)</option>
+            </select>
+          </div>
+
           <div style={{ border: '2px dashed #ccc', borderRadius: '8px', padding: '3rem 2rem', textAlign: 'center', backgroundColor: '#fafafa', position: 'relative' }}>
             <input 
               type="file" 
               ref={fileInputRef}
               onChange={handleFileUpload}
-              accept="application/pdf, video/*"
+              accept={uploadCategory === 'Album' ? 'application/pdf' : 'video/*'}
               multiple
               style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: uploading ? 'not-allowed' : 'pointer' }}
               disabled={uploading}
@@ -235,31 +259,43 @@ export default function AdminProjectView() {
               <div style={{ padding: '3rem 2rem', textAlign: 'center', color: '#666' }}>No files uploaded to this project yet.</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                {[...files.albums, ...files.videos].map((file, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid #eee' }}>
-                    <div style={{ marginRight: '1rem', color: '#0070f3', backgroundColor: '#f0f7ff', padding: '0.5rem', borderRadius: '8px' }}>
-                      {file.type === 'pdf' ? <File size={24} /> : <Video size={24} />}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem' }}>{file.name}</h4>
-                      <div style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.25rem' }}>
-                        Uploaded: {new Date(file.createdAt).toLocaleString()} &bull; {(file.size / 1024 / 1024).toFixed(1)} MB
+                {['Album', 'Full event video', 'Highlight video', 'Reels'].map(cat => {
+                  const catFiles = [...files.albums, ...files.videos].filter(f => (f.category || (f.type === 'pdf' ? 'Album' : 'Full event video')) === cat);
+                  if (catFiles.length === 0) return null;
+                  
+                  return (
+                    <div key={cat}>
+                      <div style={{ backgroundColor: '#f0f0f0', padding: '0.75rem 1.5rem', fontWeight: 'bold', color: '#555', borderBottom: '1px solid #ddd' }}>
+                        {cat}
                       </div>
+                      {catFiles.map((file, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '1.25rem 1.5rem', borderBottom: '1px solid #eee' }}>
+                          <div style={{ marginRight: '1rem', color: '#0070f3', backgroundColor: '#f0f7ff', padding: '0.5rem', borderRadius: '8px' }}>
+                            {file.type === 'pdf' ? <File size={24} /> : <Video size={24} />}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <h4 style={{ margin: 0, color: '#333', fontSize: '1.1rem' }}>{file.name}</h4>
+                            <div style={{ fontSize: '0.85rem', color: '#888', marginTop: '0.25rem' }}>
+                              Uploaded: {new Date(file.createdAt).toLocaleString()} &bull; {(file.size / 1024 / 1024).toFixed(1)} MB
+                            </div>
+                          </div>
+                          <div style={{ marginLeft: '1rem' }}>
+                            <a 
+                              href={file.url} 
+                              target="_blank" 
+                              rel="noreferrer" 
+                              style={{ display: 'inline-block', padding: '0.5rem 1rem', backgroundColor: '#f5f5f5', color: '#333', textDecoration: 'none', borderRadius: '4px', fontSize: '0.875rem', fontWeight: '500', transition: 'background 0.2s' }}
+                              onMouseOver={(e) => e.target.style.backgroundColor = '#e5e5e5'}
+                              onMouseOut={(e) => e.target.style.backgroundColor = '#f5f5f5'}
+                            >
+                              View
+                            </a>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                    <div style={{ marginLeft: '1rem' }}>
-                      <a 
-                        href={file.url} 
-                        target="_blank" 
-                        rel="noreferrer" 
-                        style={{ display: 'inline-block', padding: '0.5rem 1rem', backgroundColor: '#f5f5f5', color: '#333', textDecoration: 'none', borderRadius: '4px', fontSize: '0.875rem', fontWeight: '500', transition: 'background 0.2s' }}
-                        onMouseOver={(e) => e.target.style.backgroundColor = '#e5e5e5'}
-                        onMouseOut={(e) => e.target.style.backgroundColor = '#f5f5f5'}
-                      >
-                        View
-                      </a>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

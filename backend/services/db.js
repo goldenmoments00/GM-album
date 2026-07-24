@@ -103,6 +103,7 @@ async function addProjectFile(projectId, fileData) {
       url: fileData.url, // Cloudflare R2 public URL
       type: fileData.type,
       size: fileData.size,
+      category: fileData.category || (fileData.type === 'pdf' ? 'Album' : 'Full event video'),
       status: 'Waiting for Review',
       comments: [],
       createdAt: new Date().toISOString()

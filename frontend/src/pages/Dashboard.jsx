@@ -6,7 +6,7 @@ import { Film, BookOpen, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp
 export default function Dashboard({ session }) {
   const navigate = useNavigate();
   const { folderId, albumId, albums } = session;
-  const [activeTab, setActiveTab] = useState('albums');
+  const [activeTab, setActiveTab] = useState('Album');
   const [videos, setVideos] = useState([]);
   const [projectStatus, setProjectStatus] = useState({ videos: {}, albums: {} });
   const [isOverviewExpanded, setIsOverviewExpanded] = useState(false);
@@ -127,62 +127,51 @@ export default function Dashboard({ session }) {
         </button>
 
         {isOverviewExpanded && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px', marginTop: '15px' }}>
-            {albums.map((a, i) => {
-              const bgColor = status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : status === 'Needs Changes' ? 'rgba(197, 160, 89, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '15px' }}>
+            {['Album', 'Full event video', 'Highlight video', 'Reels'].map(cat => {
+              const catFiles = [...albums, ...videos].filter(f => (f.category || (f.isR2 ? (f.title.endsWith('.pdf') ? 'Album' : 'Full event video') : (albums.includes(f) ? 'Album' : 'Full event video'))) === cat);
+              if (catFiles.length === 0) return null;
+              
               return (
-                <button key={`a-${i}`} style={{ 
-                  display: 'flex', flexDirection: 'column', gap: '8px',
-                  padding: '10px 12px', backgroundColor: bgColor, borderRadius: '10px', 
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  borderLeft: `3px solid ${getStatusColor(status)}`,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                  cursor: 'pointer',
-                  textAlign: 'inherit',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                }}
-                onClick={() => handleOpenAlbum(a.file)}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 5px 12px rgba(0,0,0,0.3)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)'; }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <BookOpen size={16} style={{ flexShrink: 0, color: getStatusColor(status) }} />
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '600', fontSize: '0.85rem', color: 'var(--color-text-main)' }}>{a.title}</span>
+                <div key={cat}>
+                  <h4 style={{ margin: '0 0 10px 0', color: 'var(--color-primary)', fontSize: '1.1rem' }}>{cat}</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '10px' }}>
+                    {catFiles.map((file, i) => {
+                      const isAlbum = file.category === 'Album' || (!file.category && (albums.includes(file) || file.title.endsWith('.pdf')));
+                      const status = isAlbum 
+                        ? projectStatus?.albums?.[file.file]?.status || 'Waiting for Review'
+                        : projectStatus?.videos?.[file.file]?.status || 'Waiting for Review';
+                        
+                      const bgColor = status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : status === 'Needs Changes' ? 'rgba(197, 160, 89, 0.1)' : 'rgba(239, 68, 68, 0.1)';
+                      
+                      return (
+                        <button key={`${cat}-${i}`} style={{ 
+                          display: 'flex', flexDirection: 'column', gap: '8px',
+                          padding: '10px 12px', backgroundColor: bgColor, borderRadius: '10px', 
+                          border: '1px solid rgba(255,255,255,0.05)',
+                          borderLeft: `3px solid ${getStatusColor(status)}`,
+                          boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                          cursor: 'pointer',
+                          textAlign: 'inherit',
+                          transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+                        }}
+                        onClick={() => isAlbum ? handleOpenAlbum(file.file) : handleOpenVideo(file.file)}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 5px 12px rgba(0,0,0,0.3)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)'; }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {isAlbum ? <BookOpen size={16} style={{ flexShrink: 0, color: getStatusColor(status) }} /> : <Film size={16} style={{ flexShrink: 0, color: getStatusColor(status) }} />}
+                            <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '600', fontSize: '0.85rem', color: 'var(--color-text-main)' }}>{file.title}</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: '600', padding: '3px 6px', borderRadius: '6px', backgroundColor: 'rgba(0,0,0,0.5)', color: getStatusColor(status), width: 'fit-content', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            {getStatusIcon(status)}
+                            {status}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: '600', padding: '3px 6px', borderRadius: '6px', backgroundColor: 'rgba(0,0,0,0.5)', color: getStatusColor(status), width: 'fit-content', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    {getStatusIcon(status)}
-                    {status}
-                  </div>
-                </button>
-              );
-            })}
-            {videos.map((v, i) => {
-              const status = projectStatus?.videos?.[v.file]?.status || 'Waiting for Review';
-              const bgColor = status === 'Approved' ? 'rgba(16, 185, 129, 0.1)' : status === 'Needs Changes' ? 'rgba(197, 160, 89, 0.1)' : 'rgba(239, 68, 68, 0.1)';
-              return (
-                <button key={`v-${i}`} style={{ 
-                  display: 'flex', flexDirection: 'column', gap: '8px',
-                  padding: '10px 12px', backgroundColor: bgColor, borderRadius: '10px', 
-                  border: '1px solid rgba(255,255,255,0.05)',
-                  borderLeft: `3px solid ${getStatusColor(status)}`,
-                  boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
-                  cursor: 'pointer',
-                  textAlign: 'inherit',
-                  transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-                }}
-                onClick={() => handleOpenVideo(v.file)}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 5px 12px rgba(0,0,0,0.3)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2)'; }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Film size={16} style={{ flexShrink: 0, color: getStatusColor(status) }} />
-                    <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: '600', fontSize: '0.85rem', color: 'var(--color-text-main)' }}>{v.title}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', fontWeight: '600', padding: '3px 6px', borderRadius: '6px', backgroundColor: 'rgba(0,0,0,0.5)', color: getStatusColor(status), width: 'fit-content', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    {getStatusIcon(status)}
-                    {status}
-                  </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -190,43 +179,28 @@ export default function Dashboard({ session }) {
       </div>
 
       {/* Navigation Tabs */}
-      <div style={{ display: 'flex', gap: '8px', padding: '8px', backgroundColor: '#ffffff', borderRadius: '9999px', width: 'fit-content', margin: '0 auto 30px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid var(--color-border)' }}>
-        <button 
-          onClick={() => setActiveTab('albums')}
-          style={{ 
-            background: activeTab === 'albums' ? 'rgba(139, 21, 26, 0.05)' : 'transparent', 
-            border: activeTab === 'albums' ? '1px solid var(--color-primary)' : '1px solid transparent', 
-            padding: '10px 24px', 
-            cursor: 'pointer', 
-            fontSize: '1rem',
-            borderRadius: '9999px',
-            color: activeTab === 'albums' ? 'var(--color-primary)' : 'var(--color-primary)',
-            fontWeight: activeTab === 'albums' ? '700' : '600',
-            transition: 'all 0.2s ease',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            outline: 'none'
-          }}
-        >
-          <BookOpen size={18} /> Albums
-        </button>
-        <button 
-          onClick={() => setActiveTab('videos')}
-          style={{ 
-            background: activeTab === 'videos' ? 'rgba(139, 21, 26, 0.05)' : 'transparent', 
-            border: activeTab === 'videos' ? '1px solid var(--color-primary)' : '1px solid transparent', 
-            padding: '10px 24px', 
-            cursor: 'pointer', 
-            fontSize: '1rem',
-            borderRadius: '9999px',
-            color: activeTab === 'videos' ? 'var(--color-primary)' : 'var(--color-primary)',
-            fontWeight: activeTab === 'videos' ? '700' : '600',
-            transition: 'all 0.2s ease',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            outline: 'none'
-          }}
-        >
-          <Film size={18} /> Videos
-        </button>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px', backgroundColor: '#ffffff', borderRadius: '9999px', width: 'fit-content', margin: '0 auto 30px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', border: '1px solid var(--color-border)' }}>
+        {['Album', 'Full event video', 'Highlight video', 'Reels'].map(tab => (
+          <button 
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            style={{ 
+              background: activeTab === tab ? 'rgba(139, 21, 26, 0.05)' : 'transparent', 
+              border: activeTab === tab ? '1px solid var(--color-primary)' : '1px solid transparent', 
+              padding: '10px 20px', 
+              cursor: 'pointer', 
+              fontSize: '0.95rem',
+              borderRadius: '9999px',
+              color: activeTab === tab ? 'var(--color-primary)' : 'var(--color-primary)',
+              fontWeight: activeTab === tab ? '700' : '600',
+              transition: 'all 0.2s ease',
+              display: 'flex', alignItems: 'center', gap: '6px',
+              outline: 'none'
+            }}
+          >
+            {tab === 'Album' ? <BookOpen size={16} /> : <Film size={16} />} {tab}
+          </button>
+        ))}
       </div>
 
       {/* Tab Content */}
@@ -235,119 +209,95 @@ export default function Dashboard({ session }) {
         gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
         gap: '30px' 
       }}>
-        {activeTab === 'albums' && albums.map((album, index) => {
-          const status = projectStatus?.albums?.[album.file]?.status || 'Waiting for Review';
-          return (
-          <button key={index} style={{ 
-            display: 'flex',
-            flexDirection: 'column',
-            cursor: 'pointer',
-            background: 'none',
-            border: 'none',
-            padding: 0,
-            textAlign: 'inherit',
-            width: '100%'
-          }} onClick={() => handleOpenAlbum(album.file)}>
-            <div style={{ width: '100%', overflow: 'hidden', borderRadius: '12px' }}>
-              <AlbumThumbnail folderId={folderId} fileName={album.file} />
-            </div>
-            <div style={{ marginTop: '15px', textAlign: 'left' }}>
-              <span style={{ color: 'var(--color-primary)', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                {status}
-              </span>
-              <h3 style={{ fontSize: '1.4rem', margin: '5px 0 0 0', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', color: 'var(--color-text-main)' }}>
-                {album.title}
-              </h3>
-            </div>
-          </button>
-        )})}
+        {(() => {
+          const catFiles = [...albums, ...videos].filter(f => (f.category || (f.isR2 ? (f.title.endsWith('.pdf') ? 'Album' : 'Full event video') : (albums.includes(f) ? 'Album' : 'Full event video'))) === activeTab);
+          
+          if (catFiles.length === 0) {
+            return (
+              <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                No files available for {activeTab}.
+              </p>
+            );
+          }
 
-        {activeTab === 'videos' && videos.length === 0 && (
-          <p style={{ gridColumn: '1 / -1', textAlign: 'center', color: 'var(--color-text-muted)' }}>No videos available for review.</p>
-        )}
+          return catFiles.map((file, index) => {
+            const isAlbum = file.category === 'Album' || (!file.category && (albums.includes(file) || file.title.endsWith('.pdf')));
+            const status = isAlbum 
+              ? projectStatus?.albums?.[file.file]?.status || 'Waiting for Review'
+              : projectStatus?.videos?.[file.file]?.status || 'Waiting for Review';
 
-        {activeTab === 'videos' && videos.map((video, index) => {
-          const status = projectStatus?.videos?.[video.file]?.status || 'Waiting for Review';
-          return (
-            <button key={index} style={{ 
-              display: 'flex',
-              flexDirection: 'column',
-              cursor: 'pointer',
-              background: 'none',
-              border: 'none',
-              padding: 0,
-              textAlign: 'inherit',
-              width: '100%'
-            }} onClick={() => handleOpenVideo(video.file)}>
-              <div 
-                style={{ 
-                  width: '100%', 
-                  aspectRatio: '16/9', 
-                  backgroundColor: '#111', 
-                  borderRadius: '12px', 
-                  overflow: 'hidden', 
-                  position: 'relative',
+            if (isAlbum) {
+              return (
+                <button key={index} style={{ 
+                  display: 'flex', flexDirection: 'column', cursor: 'pointer', background: 'none',
+                  border: 'none', padding: 0, textAlign: 'inherit', width: '100%'
+                }} onClick={() => handleOpenAlbum(file.file)}>
+                  <div style={{ width: '100%', overflow: 'hidden', borderRadius: '12px' }}>
+                    <AlbumThumbnail folderId={folderId} fileName={file.file} />
+                  </div>
+                  <div style={{ marginTop: '15px', textAlign: 'left' }}>
+                    <span style={{ color: 'var(--color-primary)', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                      {status}
+                    </span>
+                    <h3 style={{ fontSize: '1.4rem', margin: '5px 0 0 0', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', color: 'var(--color-text-main)' }}>
+                      {file.title}
+                    </h3>
+                  </div>
+                </button>
+              );
+            }
+
+            // Video item
+            return (
+              <button key={index} style={{ 
+                display: 'flex', flexDirection: 'column', cursor: 'pointer', background: 'none',
+                border: 'none', padding: 0, textAlign: 'inherit', width: '100%'
+              }} onClick={() => handleOpenVideo(file.file)}>
+                <div style={{ 
+                  width: '100%', aspectRatio: '16/9', backgroundColor: '#111', 
+                  borderRadius: '12px', overflow: 'hidden', position: 'relative',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
-                }} 
-              >
-                <div style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  backgroundColor: '#8a1212',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '20px',
-                  textAlign: 'center',
-                  border: '1px solid rgba(0,0,0,0.05)'
-                }}>
-                  <h2 style={{ 
-                    color: '#ffffff', 
-                    fontFamily: 'var(--font-heading)', 
-                    fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', 
-                    textTransform: 'uppercase',
-                    margin: 0,
-                    opacity: 0.95
-                  }}>
-                    {video.title}
-                  </h2>
-                </div>
-                <div style={{ 
-                  position: 'absolute', 
-                  top: 0, left: 0, right: 0, bottom: 0, 
-                  background: 'rgba(0,0,0,0.1)', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  transition: 'background 0.2s ease'
                 }}>
                   <div style={{ 
-                    width: '60px', 
-                    height: '60px', 
-                    borderRadius: '50%', 
-                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                    backdropFilter: 'blur(4px)', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)', 
-                    paddingLeft: '4px' 
+                    width: '100%', height: '100%', backgroundColor: '#8a1212',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    padding: '20px', textAlign: 'center', border: '1px solid rgba(0,0,0,0.05)'
                   }}>
-                    <Play size={28} color="#fff" fill="#fff" />
+                    <h2 style={{ 
+                      color: '#ffffff', fontFamily: 'var(--font-heading)', 
+                      fontSize: 'clamp(1.5rem, 3vw, 2.5rem)', textTransform: 'uppercase',
+                      margin: 0, opacity: 0.95
+                    }}>
+                      {file.title}
+                    </h2>
+                  </div>
+                  <div style={{ 
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, 
+                    background: 'rgba(0,0,0,0.1)', display: 'flex', 
+                    alignItems: 'center', justifyContent: 'center', transition: 'background 0.2s ease'
+                  }}>
+                    <div style={{ 
+                      width: '60px', height: '60px', borderRadius: '50%', 
+                      backgroundColor: 'rgba(255, 255, 255, 0.25)', backdropFilter: 'blur(4px)', 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)', paddingLeft: '4px' 
+                    }}>
+                      <Play size={28} color="#fff" fill="#fff" />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div style={{ marginTop: '15px', textAlign: 'left' }}>
-                <span style={{ color: 'var(--color-primary)', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                  {status}
-                </span>
-                <h3 style={{ fontSize: '1.4rem', margin: '5px 0 0 0', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', color: 'var(--color-text-main)' }}>
-                  {video.title}
-                </h3>
-              </div>
-            </button>
-          );
-        })}
+                <div style={{ marginTop: '15px', textAlign: 'left' }}>
+                  <span style={{ color: 'var(--color-primary)', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                    {status}
+                  </span>
+                  <h3 style={{ fontSize: '1.4rem', margin: '5px 0 0 0', textTransform: 'uppercase', fontFamily: 'var(--font-heading)', color: 'var(--color-text-main)' }}>
+                    {file.title}
+                  </h3>
+                </div>
+              </button>
+            );
+          });
+        })()}
       </div>
     </div>
   );

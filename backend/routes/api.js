@@ -41,7 +41,8 @@ router.post('/login', async (req, res) => {
         title: a.title,
         file: a.name,
         url: a.url,
-        isR2: true
+        isR2: true,
+        category: a.category
       }));
     } else {
       // Fallback to legacy Google Drive
@@ -157,7 +158,8 @@ router.get('/videos/:id', async (req, res) => {
         title: v.title,
         file: v.name,
         url: v.url,
-        isR2: true
+        isR2: true,
+        category: v.category
       }));
       return res.json({ videos });
     }
